@@ -27,6 +27,7 @@ from B_Contact_addresses import contact_addresses, rev_contact_addresses
 import B_Config as config
 from K_Send_notification import slack_webhook, telegram_notification, email_notification
 
+import time
 from time import sleep
 from datetime import datetime, date, timedelta
 import os
@@ -37,6 +38,8 @@ import logging.config
 #------------------------------
 #---------- INITIATE ----------
 #------------------------------
+
+begin_time = time.time()
 
 # Create log path if it does not exist
 if not os.path.exists('./logs'):
@@ -111,7 +114,6 @@ date_today = date.today()
 #---------- SUPPORT DEF -----------
 #----------------------------------
 
-
 def get_fee_estimation():
     estimation = terra.treasury.tax_cap('uusd')
     fee = int(estimation.to_data().get('amount')) * \
@@ -133,12 +135,12 @@ def get_status_of_tx(tx_hash):
         default_logger.error(err)
         pass
 
-
 def write_cooldown(cooldowns):
     # Input: -
     # Output: -
     # Action: Creates a file in the root folder, containing the last incl. date of the cooldown periode
     with open('X_Cooldowns.json', 'w') as fp:
+        print(cooldowns)
         json.dump(cooldowns, fp)
     fp.close
     pass
@@ -146,7 +148,7 @@ def write_cooldown(cooldowns):
 
 def read_cooldown():
     empty = {}
-    # If file does not exists create one
+    # If file does not exists create one and fill it with data
     if not os.path.isfile('X_Cooldowns.json'):
         with open('X_Cooldowns.json', 'w') as fp:
             pass
@@ -158,7 +160,7 @@ def read_cooldown():
         return cooldowns
     except:
         return empty
-
+    
 #------------------------------
 #---------- QUERIES -----------
 #------------------------------
@@ -343,8 +345,7 @@ def Mirror_get_position_info():
             action_to_be_executed = 'withdraw'
             # Calculate how much in-kind to withdraw to return to the desired ratio, even if the collaterial is not in UST
             # v This is how much collateral is already in
-            amount_to_execute_in_ust = collateral_amount_in_ust - \
-                target_ratio * shorted_asset_amount
+            amount_to_execute_in_ust = collateral_amount_in_ust - target_ratio * shorted_asset_amount
             # ^ This is how much absolut collateral in UST is required to get the desired target_ratio
             # Quick rule of three
             amount_to_execute_in_kind = (
@@ -353,14 +354,7 @@ def Mirror_get_position_info():
         else:
             action_to_be_executed = 'none'
             amount_to_execute_in_kind = 0
-
-        # # Calculate the amount_to_execute also in UST
-        # if collateral_token_denom == 'aUST':
-        #     amount_to_execute_in_ust = amount_to_execute_in_kind * aUST_rate
-        # elif collateral_token_denom == 'uluna':
-        #     amount_to_execute_in_ust = amount_to_execute_in_kind * uluna_rate
-        # elif collateral_token_denom == 'uusd':
-        #     amount_to_execute_in_ust = amount_to_execute_in_kind
+            amount_to_execute_in_ust = 0
 
         Mirror_position_info.append({
             'position_idx': position_idx,
@@ -1083,7 +1077,7 @@ if __name__ == '__main__':
 
 def keep_safe():
     try:
-        default_logger.debug("---- Start of keep_safe() ----")
+        default_logger.debug("Start of keep_safe()\n")
 
     #------------------------------------------
     #---------- GENERAL SECTION ----------
@@ -1101,12 +1095,11 @@ def keep_safe():
                 'YOU NEED TO ACT! Your wallet balance of {current_UST_wallet_balance} UST is too low to execute any transaction.')
             return False
 
-    #------------------------------------------
-    #---------- CLAIM & SELL SECTION ----------
-    #------------------------------------------
+        default_logger.debug(f'------------------------------------------\n'
+                             f'---------- CLAIM & SELL SECTION ----------\n'
+                             f'------------------------------------------\n')
 
         # Mirror: Claim & sell MIR
-        default_logger.debug("---- Mirror: Claim & sell MIR ----")
         if config.MIR_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_MIR = get_claimable_MIR()
@@ -1118,16 +1111,16 @@ def keep_safe():
                 claim_MIR_tx_status = get_status_of_tx(claim_MIR_tx)
 
                 if claim_MIR_tx_status:
-                    default_logger.debug(f'Success TX: {claim_MIR_tx}.')
+                    default_logger.debug(f'Success TX: {claim_MIR_tx}')
                     sell_MIR_tx = sell_MIR(claimable_MIR)
                     sell_MIR_tx_status = get_status_of_tx(sell_MIR_tx)
                     if sell_MIR_tx_status:
-                        default_logger.debug(f'Success TX: {sell_MIR_tx}.')
+                        default_logger.debug(f'Success TX: {sell_MIR_tx}')
                         report_logger.info(
-                            f'{claimable_MIR:.2f} MIR have been claimed and sold for {value_of_MIR_claim:.2f} UST total.')
+                            f'[Claim & Sell MIR] {claimable_MIR:.2f} MIR have been claimed and sold for {value_of_MIR_claim:.2f} UST total.')
                         UST_balance_to_be_deposited_at_Anchor_Earn += value_of_MIR_claim
                         default_logger.debug(
-                            f'UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                            f'[Claim & Sell MIR] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
                     else:
                         default_logger.warning(f'Failed TX: {sell_MIR_tx}.\n'
                                                f'Reason: {sell_MIR_tx_status}')
@@ -1136,13 +1129,12 @@ def keep_safe():
                                            f'Reason: {claim_MIR_tx_status}')
             else:
                 default_logger.debug(
-                    f'Skipped because claimable MIR value ({value_of_MIR_claim:.2f}) below limit ({config.MIR_min_total_value:.2f}) or MIR price ({(value_of_MIR_claim/claimable_MIR):.2f}) below limit ({config.MIR_min_price:.2f}).')
+                    f'[Claim & Sell MIR] Skipped because claimable MIR value ({value_of_MIR_claim:.2f}) below limit ({config.MIR_min_total_value:.0f}) or MIR price ({(value_of_MIR_claim/claimable_MIR):.2f}) below limit ({config.MIR_min_price:.2f}).')
         else:
             default_logger.debug(
-                f'Skipped because disabled by config ({config.MIR_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
+                f'[Claim & Sell MIR] Skipped because disabled by config ({config.MIR_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
 
         # Spectrum: Claim & sell SPEC
-        default_logger.debug("---- Mirror: Claim & sell SPEC ----")
         if config.SPEC_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_SPEC = get_claimable_SPEC()
@@ -1154,16 +1146,16 @@ def keep_safe():
                 claim_SPEC_tx_status = get_status_of_tx(claim_SPEC_tx)
 
                 if claim_SPEC_tx_status:
-                    default_logger.debug(f'Success TX: {claim_SPEC_tx}.')
+                    default_logger.debug(f'Success TX: {claim_SPEC_tx}')
                     sell_SPEC_tx = sell_SPEC(claimable_SPEC)
                     sell_SPEC_tx_status = get_status_of_tx(sell_SPEC_tx)
                     if sell_SPEC_tx_status:
-                        default_logger.debug(f'Success TX: {sell_SPEC_tx}.')
+                        default_logger.debug(f'Success TX: {sell_SPEC_tx}')
                         report_logger.info(
-                            f'{claimable_SPEC:.2f} SPEC have been claimed and sold for {value_of_SPEC_claim:.2f} UST total.')
+                            f'[Claim & Sell SPEC] {claimable_SPEC:.2f} SPEC have been claimed and sold for {value_of_SPEC_claim:.2f} UST total.')
                         UST_balance_to_be_deposited_at_Anchor_Earn += value_of_SPEC_claim
                         default_logger.debug(
-                            f'UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                            f'[Claim & Sell SPEC] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
                     else:
                         default_logger.warning(f'Failed TX: {sell_SPEC_tx}.\n'
                                                f'Reason: {sell_SPEC_tx_status}')
@@ -1172,13 +1164,12 @@ def keep_safe():
                                            f'Reason: {claim_SPEC_tx_status}')
             else:
                 default_logger.debug(
-                    f'Skipped because claimable SPEC value ({value_of_SPEC_claim:.2f}) below limit ({config.SPEC_min_total_value:.2f}) or SPEC price ({(value_of_SPEC_claim/claimable_SPEC):.2f}) below limit ({config.SPEC_min_price:.2f}).')
+                    f'[Claim & Sell SPEC] Skipped because claimable SPEC value ({value_of_SPEC_claim:.2f}) below limit ({config.SPEC_min_total_value:.0f}) or SPEC price ({(value_of_SPEC_claim/claimable_SPEC):.2f}) below limit ({config.SPEC_min_price:.2f}).')
         else:
             default_logger.debug(
-                f'Skipped because disabled by config ({config.SPEC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
+                f'[Claim & Sell SPEC] Skipped because disabled by config ({config.SPEC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
 
         # Anchor: Claim & sell ANC
-        default_logger.debug("---- Mirror: Claim & sell ANC ----")
         if config.ANC_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_ANC = get_claimable_ANC()
@@ -1190,16 +1181,16 @@ def keep_safe():
                 claim_ANC_tx_status = get_status_of_tx(claim_ANC_tx)
 
                 if claim_ANC_tx_status:
-                    default_logger.debug(f'Success TX: {claim_ANC_tx}.')
+                    default_logger.debug(f'Success TX: {claim_ANC_tx}')
                     sell_ANC_tx = sell_ANC(claimable_ANC)
                     sell_ANC_tx_status = get_status_of_tx(sell_ANC_tx)
                     if sell_ANC_tx_status:
-                        default_logger.debug(f'Success TX: {sell_ANC_tx}.')
+                        default_logger.debug(f'Success TX: {sell_ANC_tx}')
                         report_logger.info(
-                            f'{claimable_ANC:.2f} ANC have been claimed and sold for {value_of_ANC_claim:.2f} UST total.')
+                            f'[Claim & Sell ANC] {claimable_ANC:.2f} ANC have been claimed and sold for {value_of_ANC_claim:.2f} UST total.')
                         UST_balance_to_be_deposited_at_Anchor_Earn += value_of_ANC_claim
                         default_logger.debug(
-                            f'UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                            f'[Claim & Sell ANC] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
                     else:
                         default_logger.warning(f'Failed TX: {sell_ANC_tx}.\n'
                                                f'Reason: {sell_ANC_tx_status}')
@@ -1208,13 +1199,12 @@ def keep_safe():
                                            f'Reason: {claim_ANC_tx_status}')
             else:
                 default_logger.debug(
-                    f'Skipped because claimable ANC value ({value_of_ANC_claim:.2f}) below limit ({config.ANC_min_total_value:.2f}) or ANC price ({(value_of_ANC_claim/claimable_SPEC):.2f}) below limit ({config.ANC_min_price:.2f}).')
+                    f'[Claim & Sell ANC] Skipped because claimable ANC value ({value_of_ANC_claim:.2f}) below limit ({config.ANC_min_total_value:.0f}) or ANC price ({(value_of_ANC_claim/claimable_SPEC):.2f}) below limit ({config.ANC_min_price:.2f}).')
         else:
             default_logger.debug(
-                f'Skipped because disabled by config ({config.ANC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
+                f'[Claim & Sell ANC] Skipped because disabled by config ({config.ANC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
 
         # Mirror: Claim un-locked UST
-        default_logger.debug("---- Mirror: Claim un-locked UST ----")
         if config.Mirror_claim_unlocked_UST \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_UST = Mirror_get_claimable_UST(Mirror_position_info)
@@ -1226,25 +1216,25 @@ def keep_safe():
                     Mirror_claim_unlocked_UST_tx)
                 if Mirror_claim_unlocked_UST_tx_status:
                     default_logger.debug(
-                        f'Success TX: {Mirror_claim_unlocked_UST_tx}.')
+                        f'Success TX: {Mirror_claim_unlocked_UST_tx}')
                     report_logger.info(
-                        f'{claimable_UST:.2f} UST have been claimed from your shorts on Mirror.')
+                        f'[Claim UST] {claimable_UST:.2f} UST have been claimed from your shorts on Mirror.')
                     UST_balance_to_be_deposited_at_Anchor_Earn += claimable_UST
                     default_logger.debug(
-                        f'UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                        f'[Claim UST] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
                 else:
                     default_logger.warning(f'Failed TX: {Mirror_claim_unlocked_UST_tx}.\n'
                                            f'Reason: {Mirror_claim_unlocked_UST_tx_status}')
             else:
                 default_logger.debug(
-                    f'Skipped because claimable UST amount ({claimable_UST:.2f}) below limit ({config.Mirror_min_amount_UST_to_claim:.2f}).')
+                    f'[Claim UST] Skipped because claimable UST amount ({claimable_UST:.0f}) below limit ({config.Mirror_min_amount_UST_to_claim:.0f}).')
         else:
             default_logger.debug(
-                f'Skipped because disabled by config ({config.Mirror_claim_unlocked_UST}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
+                f'[Claim UST] Skipped because disabled by config ({config.Mirror_claim_unlocked_UST}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
 
-    #-----------------------------------------------------------
-    #---------- ANCHOR REPAY, BORROW, DEPOSIT SECTION ----------
-    #-----------------------------------------------------------
+        default_logger.debug(f'\n-----------------------------------------------------------\n'
+                            f'---------- ANCHOR REPAY, BORROW, DEPOSIT SECTION ----------\n'
+                            f'-----------------------------------------------------------\n')
 
         # Anchor: Repay loan if necesarry and repayment amount bigger than Anchor_min_repay_limit
         Anchor_amount_to_execute_in_ust = Anchor_borrow_info['amount_to_execute_in_ust']
@@ -1254,7 +1244,6 @@ def keep_safe():
         current_UST_wallet_balance = get_native_balance('uusd')
         current_aUST_wallet_balance = get_aUST_balance()
 
-        default_logger.debug("---- Anchor: Repay ----")
         if Anchor_action_to_be_executed == 'repay' \
                 and Anchor_amount_to_execute_in_ust > config.Anchor_min_repay_limit:
 
@@ -1266,9 +1255,9 @@ def keep_safe():
                     Anchor_repay_debt_UST_tx)
                 if Anchor_repay_debt_UST_tx_status:
                     default_logger.debug(
-                        f'Success TX: {Anchor_repay_debt_UST_tx}.')
+                        f'Success TX: {Anchor_repay_debt_UST_tx}')
                     report_logger.info(
-                        f'{Anchor_amount_to_execute_in_ust:.2f} UST have been repaid to Anchor Borrow from your wallet.')
+                        f'[Anchor Repay] {Anchor_amount_to_execute_in_ust:.2f} UST have been repaid to Anchor Borrow from your wallet.')
                 else:
                     default_logger.warning(f'Failed TX: {Anchor_repay_debt_UST_tx}.\n'
                                            f'Reason: {Anchor_repay_debt_UST_tx_status}')
@@ -1286,16 +1275,16 @@ def keep_safe():
 
                 if Anchor_withdraw_UST_from_Earn_tx_status:
                     default_logger.debug(
-                        f'Success TX: {Anchor_withdraw_UST_from_Earn_tx}.')
+                        f'Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
                     Anchor_repay_debt_UST_tx = Anchor_repay_debt_UST(
                         Anchor_amount_to_execute_in_ust)
                     Anchor_repay_debt_UST_tx_status = get_status_of_tx(
                         Anchor_repay_debt_UST_tx)
                     if Anchor_repay_debt_UST_tx_status:
                         default_logger.debug(
-                            f'Success TX: {Anchor_repay_debt_UST_tx}.')
+                            f'Success TX: {Anchor_repay_debt_UST_tx}')
                         report_logger.info(
-                            f'{Amount_to_be_withdrawn:.2f} UST have been withdrawn from your Anchor Earn and {Anchor_repay_debt_UST_tx:.2f} (incl. UST from your wallet) have been repaid to Anchor Borrow.')
+                            f'[Anchor Withdraw] {Amount_to_be_withdrawn:.2f} UST have been withdrawn from your Anchor Earn and {Anchor_repay_debt_UST_tx:.2f} (incl. UST from your wallet) have been repaid to Anchor Borrow.')
                     else:
                         default_logger.warning(f'Failed TX: {Anchor_repay_debt_UST_tx}.\n'
                                                f'Reason: {Anchor_repay_debt_UST_tx_status}')
@@ -1314,7 +1303,7 @@ def keep_safe():
 
                 if Anchor_withdraw_UST_from_Earn_tx_status:
                     default_logger.debug(
-                        f'Success TX: {Anchor_withdraw_UST_from_Earn_tx}.')
+                        f'Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
 
                     Anchor_repay_debt_UST_tx = Anchor_repay_debt_UST(
                         get_native_balance('uusd') - general_estimated_tx_fee)
@@ -1323,7 +1312,7 @@ def keep_safe():
 
                     if Anchor_repay_debt_UST_tx_status:
                         default_logger.debug(
-                            f'Success TX: {Anchor_repay_debt_UST_tx}.')
+                            f'Success TX: {Anchor_repay_debt_UST_tx}')
                         report_logger.warning(f'YOU NEED TO ACT! There was not enough availabe aUST to withdraw and not enough UST in your wallet to repay your Anchor Borrow.\n'
                                               f'{current_aUST_wallet_balance:.2f} aUST has been withdrawn, and combined with your availabe UST in your wallet, {Anchor_repay_debt_UST_tx:.2f} UST have been repaid to Anchor Borrow.')
                     else:
@@ -1335,18 +1324,18 @@ def keep_safe():
                                            f'Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
             else:
                 default_logger.debug(
-                    f'Skipped because disabled by config Anchor_enable_withdraw_of_deposited_UST({config.Anchor_enable_withdraw_of_deposited_UST}) or Anchor_enable_partially_repay_if_not_enough_UST_in_wallet ({config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet}).')
+                    f'[Repay] Skipped because disabled by config Anchor_enable_withdraw_of_deposited_UST({config.Anchor_enable_withdraw_of_deposited_UST}) or\nAnchor_enable_partially_repay_if_not_enough_UST_in_wallet ({config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet}).')
         else:
             default_logger.debug(
-                f'Skipped because nothing to repay ({Anchor_action_to_be_executed}) or repay amount ({Anchor_amount_to_execute_in_ust:.2f}) below repay limit ({config.Anchor_min_repay_limit:.2f}).')
+                f'[Repay] Skipped because disabled by config ({config.Anchor_enable_auto_repay_of_debt}), nothing to repay ({Anchor_action_to_be_executed}) or repay amount ({Anchor_amount_to_execute_in_ust:.0f}) below repay limit ({config.Anchor_min_repay_limit:.0f}).')
 
         # Anchor: Borrow more UST if possible, allowed, big enough and enough balance for tx fees is available
-        default_logger.debug("---- Anchor Borrow more ----")
         if Anchor_action_to_be_executed == 'borrow' \
                 and Anchor_amount_to_execute_in_ust > config.Anchor_min_borrow_limit \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
-            # Check if we are in a cooldown period
-            if cooldowns['Anchor_borrow_cooldown'] <= date_today:
+
+            # Check if we are in a cooldown period or if the key actually exists
+            if not cooldowns.get('Anchor_borrow_cooldown') or cooldowns['Anchor_borrow_cooldown'] <= date_today:
 
                 Anchor_borrow_more_UST_tx = Anchor_borrow_more_UST(
                     Anchor_amount_to_execute_in_ust)
@@ -1355,32 +1344,30 @@ def keep_safe():
 
                 if Anchor_borrow_more_UST_tx_status:
                     default_logger.debug(
-                        f'Success TX: {Anchor_borrow_more_UST_tx}.')
+                        f'Success TX: {Anchor_borrow_more_UST_tx}')
                     report_logger.info(
-                        f'{Anchor_amount_to_execute_in_ust:.2f} UST more has been borrowed from Anchor Borrow.')
+                        f'[Anchor Borrow] {Anchor_amount_to_execute_in_ust:.2f} UST more has been borrowed from Anchor Borrow.')
                     UST_balance_to_be_deposited_at_Anchor_Earn += Anchor_amount_to_execute_in_ust
                     default_logger.debug(
-                        f'UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                        f'[Repay] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
 
-                    # Write date of today into cooldown dictionary
-                    cooldowns['Anchor_borrow_cooldown'] = date_today + \
-                        timedelta(days=config.Anchor_borrow_cooldown)
+                    # Cooldown: Write date of today into cooldown dictionary
+                    cooldowns['Anchor_borrow_cooldown'] = f'{(date_today + timedelta(days=config.Anchor_borrow_cooldown)):%Y-%m-%d}'
                     if config.Anchor_borrow_cooldown > 0:
                         report_logger.info(
-                            f'Cooldown limit has been activated. Next Anchor deposit will be possible on {date_today + timedelta(days=config.Anchor_borrow_cooldown)}')
+                            f'[Anchor Borrow] Cooldown limit has been activated. Next Anchor deposit will be possible on {date_today + timedelta(days=config.Anchor_borrow_cooldown)}')
 
                 else:
                     default_logger.warning(f'Failed TX: {Anchor_borrow_more_UST_tx}.\n'
                                            f'Reason: {Anchor_borrow_more_UST_tx_status}')
             else:
                 default_logger.debug(
-                    f'Skipped as we are in a cooldown period until ({cooldowns["Anchor_borrow_cooldown"]}).')
+                    f'[Repay] Skipped as we are in a cooldown period until ({cooldowns["Anchor_borrow_cooldown"]}).')
         else:
             default_logger.debug(
-                f'Skipped because nothing to borrow ({Anchor_action_to_be_executed}), borrow amount ({Anchor_amount_to_execute_in_ust:.2f}) below repay limit ({config.Anchor_min_borrow_limit:.2f}) or not enough funds for the transaction ({(current_UST_wallet_balance - general_estimated_tx_fee):.2d}).')
+                f'[Borrow] Skipped because disabled by config ({config.Anchor_enable_auto_borrow_UST}), nothing to borrow ({Anchor_action_to_be_executed}), borrow amount ({Anchor_amount_to_execute_in_ust:.0f}) below repay limit ({config.Anchor_min_borrow_limit:.0f}) or not enough funds for the transaction ({(current_UST_wallet_balance - general_estimated_tx_fee):.0f}).')
 
         # Anchor: Deposit UST from previous claim/sale of reward tokens into Anchor to get more aUST
-        default_logger.debug("---- Anchor Deposit UST ----")
         if config.Anchor_enable_deposit_borrowed_UST \
                 and UST_balance_to_be_deposited_at_Anchor_Earn >= config.Anchor_min_deposit_amount:
 
@@ -1391,31 +1378,38 @@ def keep_safe():
 
             if Anchor_deposit_UST_for_Earn_tx_status:
                 default_logger.debug(
-                    f'Success TX: {Anchor_deposit_UST_for_Earn_tx}.')
+                    f'Success TX: {Anchor_deposit_UST_for_Earn_tx}')
                 report_logger.info(
-                    f'{UST_balance_to_be_deposited_at_Anchor_Earn:.2f} UST have been deposited to Anchor Earn.')
+                    f'[Anchor Deposit] {UST_balance_to_be_deposited_at_Anchor_Earn:.2f} UST have been deposited to Anchor Earn.')
             else:
                 default_logger.warning(f'Failed TX: {Anchor_deposit_UST_for_Earn_tx}.\n'
                                        f'Reason: {Anchor_deposit_UST_for_Earn_tx_status}')
         else:
             default_logger.debug(
-                f'Skipped because disabled by config ({config.Anchor_enable_deposit_borrowed_UST} or deposit amount ({UST_balance_to_be_deposited_at_Anchor_Earn:.2f}) below deposit limit ({config.Anchor_min_deposit_amount:.2f})')
-    #-------------------------------------------
-    #---------- MIRROR SHORTS SECTION ----------
-    #-------------------------------------------
+                f'[Deposit] Skipped because disabled by config ({config.Anchor_enable_deposit_borrowed_UST}) or deposit amount ({UST_balance_to_be_deposited_at_Anchor_Earn:.0f}) below deposit limit ({config.Anchor_min_deposit_amount:.0f})')
+    
+        default_logger.debug(f'\n[Anchor facts]'
+                            f'Loan Amount: {Anchor_borrow_info["loan_amount"]:.0f} UST\n'
+                            f'Borrow limit: {Anchor_borrow_info["borrow_limit"]:.0f} UST\n'
+                            f'Current LTV: {Anchor_borrow_info["cur_col_ratio"]:.2f}\n'
+                            f'Lower Trigger: {Anchor_borrow_info["lower_trigger_ratio"]:.2f}\n'
+                            f'Upper Trigger: {Anchor_borrow_info["upper_trigger_ratio"]:.2f}\n')
+    
+        default_logger.debug(f'-------------------------------------------\n'
+                             f'---------- MIRROR SHORTS SECTION ----------\n'
+                             f'-------------------------------------------\n')
 
-        default_logger.debug("---- Mirror Short Section ----")
         for position in Mirror_position_info:
+            position_idx = position['position_idx']
             action_to_be_executed = position['action_to_be_executed']
             # Check if position is marked for a withdraw
-            if (action_to_be_executed == 'withdraw'):
-                position_idx = position['position_idx']
+            if (action_to_be_executed == 'withdraw'):                
                 amount_to_execute_in_ust = position["amount_to_execute_in_ust"]
                 amount_to_execute_in_kind = position['amount_to_execute_in_kind']
                 collateral_token_denom = position['collateral_token_denom']
 
-                # Check if a cooldown is in the cooldowns and if it is still relevant
-                if cooldowns[position_idx] <= date_today:
+                # Check if we are in a cooldown period or if the key actually exists
+                if not cooldowns.get(position_idx) or cooldowns[position_idx] <= date_today:
 
                     Mirror_withdraw_collateral_for_position_tx = Mirror_withdraw_collateral_for_position(
                         position_idx, amount_to_execute_in_kind, collateral_token_denom)
@@ -1424,21 +1418,20 @@ def keep_safe():
 
                     if Mirror_withdraw_collateral_for_position_tx_status:
                         default_logger.debug(
-                            f'Success TX: {Mirror_withdraw_collateral_for_position_tx}.')
+                            f'Success TX: {Mirror_withdraw_collateral_for_position_tx}')
                         report_logger.info(
-                            f'{amount_to_execute_in_kind:.2f} {collateral_token_denom:.2f} with a value of {amount_to_execute_in_ust:.2f} UST of collateral have been withdrawn from your short position idx {position["position_idx"]}.')
-                        # Write date of today into cooldown dictionary
-                        cooldowns[position_idx] = date_today + \
-                            timedelta(days=config.Mirror_withdraw_cooldown)
+                            f'[Mirror Shorts] {amount_to_execute_in_kind:.2f} {collateral_token_denom} with a value of {amount_to_execute_in_ust:.0f} UST of collateral have been withdrawn from your short position idx {position["position_idx"]}.')
+                        # Cooldown: Write date of today into cooldown dictionary
+                        cooldowns[position_idx] = f'{(date_today + timedelta(days=config.Mirror_withdraw_cooldown)):%Y-%m-%d}'
                         if config.Mirror_withdraw_cooldown > 0:
                             report_logger.info(
-                                f'Cooldown limit has been activated. Next withdraw for short position idx {position["position_idx"]} will be possible on {date_today + timedelta(days=config.Mirror_withdraw_cooldown)}')
+                                f'[Mirror Shorts] Cooldown limit has been activated. Next withdraw for short position idx {position["position_idx"]} will be possible on {date_today + timedelta(days=config.Mirror_withdraw_cooldown)}')
                     else:
                         default_logger.warning(f'Failed TX: {Mirror_withdraw_collateral_for_position_tx}.\n'
                                                f'Reason: {Mirror_withdraw_collateral_for_position_tx_status}')
                 else:
                     default_logger.debug(
-                        f'Skipped as we are in a cooldown period until ({cooldowns[position_idx]}) for position idx ({position_idx}).')
+                        f'[Mirror Shorts] Skipped as we are in a cooldown period until ({cooldowns[position_idx]}) for position idx ({position_idx}).')
             # Check if position has a deposit pending and if the deposit amount if big enough
             elif action_to_be_executed == 'deposit' \
                     and amount_to_execute_in_kind > config.Mirror_min_deposit_limit:
@@ -1458,7 +1451,7 @@ def keep_safe():
                     enough_balance = available_balance >= amount_to_execute_in_kind + fee_estimation
                 else:
                     default_logger.debug(
-                        f'You discovered a new collateral_token_denom. Congratulations! Please post this as an issue on my Github, so I can fix it. Thank you!')
+                        f'[Mirror Shorts] You discovered a new collateral_token_denom. Congratulations! Please post this as an issue on my Github, so I can fix it. Thank you!')
 
                 if enough_balance:
                     # If you have enough balance then deposit collateral
@@ -1469,9 +1462,9 @@ def keep_safe():
 
                     if Mirror_deposit_collateral_for_position_tx_status:
                         default_logger.debug(
-                            f'Success TX: {Mirror_deposit_collateral_for_position_tx}.')
+                            f'Success TX: {Mirror_deposit_collateral_for_position_tx}')
                         report_logger.info(
-                            f'{amount_to_execute_in_kind:.2f} {collateral_token_denom:.2f} with a value of {amount_to_execute_in_ust:.2f} UST of collateral have been deposited to your short position idx {position["position_idx"]}.')
+                            f'[Mirror Shorts] {amount_to_execute_in_kind:.2f} {collateral_token_denom:.2f} with a value of {amount_to_execute_in_ust:.2f} UST of collateral have been deposited to your short position idx {position["position_idx"]}.')
                     else:
                         default_logger.warning(f'Failed TX: {Mirror_deposit_collateral_for_position_tx}.\n'
                                                f'Reason: {Mirror_deposit_collateral_for_position_tx_status}')
@@ -1484,7 +1477,7 @@ def keep_safe():
 
                     if Mirror_deposit_collateral_for_position_tx_status:
                         default_logger.debug(
-                            f'Success TX: {Mirror_deposit_collateral_for_position_tx}.')
+                            f'Success TX: {Mirror_deposit_collateral_for_position_tx}')
                         report_logger.warning(f'YOU NEED TO ACT! There was not enough availabe {collateral_token_denom:.2f} in your wallet to deposit your short position {position_idx} on Mirror.\n'
                                               f'{available_balance:.2f} {collateral_token_denom:.2f} from your wallet, has been deposited in your short position {position_idx} on Mirror.')
                     else:
@@ -1493,10 +1486,12 @@ def keep_safe():
 
             elif action_to_be_executed == 'none':
                 default_logger.debug(
-                    f'There was nothing to do with position {position_idx}. Good :).')
+                    f'[Mirror Shorts] Position {position_idx} is healthy. Current ratio is {position["cur_col_ratio"]:.2f}.')
             else:
                 default_logger.warning(
-                    f'Something went wrong with position {position_idx} and action {action_to_be_executed}.')
+                    f'[Mirror Shorts] Something went wrong with position {position_idx} and action {action_to_be_executed}.')
+        default_logger.debug(   f'\n[CONFIG] Mirror_enable_deposit_collateral is set to ({config.Mirror_enable_deposit_collateral})\n'
+                                f'[CONFIG] Mirror_enable_withdraw_collateral is set to ({config.Mirror_enable_withdraw_collateral})')
 
         # Write cooldowns to file
         write_cooldown(cooldowns)
@@ -1505,22 +1500,24 @@ def keep_safe():
         default_logger.error(err)
 
     # Notify user
-        report_content = report_array.getvalue()
-        print(report_array.getvalue())
-        if config.Send_me_a_report and not config.Debug_mode:
-            if config.Notify_slack:
-                slack_webhook(report_content)
-            if config.Notify_Telegram:
-                telegram_notification(report_content)
-            if config.Notify_Email:
-                email_notification(config.email_subject, report_content)
-
+    report_content = report_array.getvalue()
+    print(report_array.getvalue())
+    if config.Send_me_a_report and not config.Debug_mode:
+        if config.Notify_slack:
+            slack_webhook(report_content)
+        if config.Notify_Telegram:
+            telegram_notification(report_content)
+        if config.Notify_Email:
+            email_notification(config.email_subject, report_content)
+    return True
 
 if __name__ == '__main__':
     keep_safe = keep_safe()
+    default_logger.debug(f'[SCRIPT] Runtime of entire script: {(time.time() - begin_time):.0f}s')
+    print(f'[SCRIPT] Runtime of entire script: {(time.time() - begin_time):.0f}s')
     if not keep_safe:
-        print('Oh no!!! Something went wrong!')
-        default_logger.error(
-            'Something went wrong! - keep_safe() returned empty.')
+        default_logger.error(f'[SCRIPT] Something went wrong! - keep_safe() returned empty.')
+        print('[SCRIPT] Oh no!!! Something went wrong!')
     else:
-        print(f'Script ran perfectly!')
+        default_logger.debug(f'[SCRIPT] Script ran perfectly!')
+        print(f'[SCRIPT] Script ran perfectly!')

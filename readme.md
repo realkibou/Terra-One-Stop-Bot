@@ -5,6 +5,7 @@ Then, this bot is for you!
 
 Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra.
 
+## Thank you!
 If this script is helpful to you and helps maximize your gainz, feel free to donate a bit to **terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg**. This will also keep the development going and the script up-to-date. Thank you! :)
 
 *Special thanks to unl1k3ly as his bot taught me what I needed to know. Thanks Terra, Mirror, Spectrum, Anchor team and the Terra Community!*
@@ -72,7 +73,7 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 - If you withdraw pool rewards, sell them, claim UST etc. and it is still not enough UST to exceed the `config.Anchor_min_deposit_amount` that UST will just remain in your wallet. They will NOT be "remembere" for the next run of the script.
 
 ## Very important remarks!
-- This script is quite heavy, so do not run it too short intervals. Once per minutes maybe?
+- This script is quite heavy, so do not run it too short intervals. It currently runs at around 30 sec to 1 min. Depending on your internet connection.
 - Use this bot on your own risk. I have done my best to check it, but program bugs & human bugs happen.
 - This bot can be used with the Testnet. I strongly recommend to play on the Testnet first, before letting it manage your funds.
 - Since the LTV/min ratios on Mirror and Anchor are defined excatly opposite it each other, it may get confusing to set the `lower_distance`, `target_distance`, `upper_distance`. I wrote some explanations, but make sure you take time to understand it
