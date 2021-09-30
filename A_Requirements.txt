@@ -1,0 +1,4 @@
+terra_sdk
+requests
+#flask
+#apscheduler
