@@ -56,13 +56,15 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * `Anchor_borrow_cooldown` Define cooldown period in days for the auto borrow function
     * `Mirror_min_withdraw_limit_in_UST` Define minimum withdraw limit in UST
     * `Mirror_withdraw_cooldown` Define cooldown period in days for the auto withdraw function
-7. Sends you a report on Telegram, Slack, Email, write log into ./logs
+7. Sends you a report on Telegram, Slack, Email when something was done. Also writes logs into ./logs and send you a status update if you want.
     * `Debug_mode` True/False debug mode for default.log
     * `Logging_detail` Define what level of detail each log shall show
     * `Send_me_a_report` True/False prepares an summary of what has happend, if something has happend. Always includes WARNINGs and ERRORs.
     * `Notify_Slack` True/False notifications to be recieved on Slack
     * `Notify_Telegram` True/False notifications to be recieved on Telegram
     * `Notify_Gmail` True/False notifications to be send through Gmail to any email
+    * `Send_me_a_status_update` True/False if you want to receive a status update anyway depending on your `Status_update_frequency` 
+    * `Status_update_frequency` Define in what intervals (hours) you want to receive a status update
 8. Other
     * `safety_multiple_on_transaction_fees` Safety multiple on transaction fees
 
@@ -119,12 +121,10 @@ To send emails from your Google account you need to get an `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
-- Email Notifications
-- Daily/weeky (what every you like) status info
-- Bundle of queries as this script is spaming queries like crazy
+- Bundle of queries as this script is spamming queries like crazy
 - Bundle transactions (for example Swaps) to save fees
 - Run Mirror withdrawls before repay of Anchor Borrow to make use of that available aUST
-. Build a front end incl. a better way to run the script in intervals
+. Build a front end incl. a better way to run the script in intervals than crontab
 
 ## Similar projects
 - https://github.com/unl1k3ly/AnchorHODL

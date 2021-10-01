@@ -14,6 +14,7 @@
 # https://docs.anchorprotocol.com/
 # https://api.extraterrestrial.money/v1/api/prices
 
+from inspect import _empty
 from terra_sdk.client.lcd import LCDClient
 from terra_sdk.key.mnemonic import MnemonicKey
 from terra_sdk.core.coins import Coins
@@ -27,7 +28,6 @@ from B_Contact_addresses import contact_addresses, rev_contact_addresses
 import B_Config as config
 from K_Send_notification import slack_webhook, telegram_notification, gmail_notification
 
-import time
 from time import time
 from datetime import datetime, date, timedelta
 import os
@@ -35,6 +35,7 @@ import io
 import json
 import logging.config
 import requests
+import time
 
 #------------------------------
 #---------- INITIATE ----------
@@ -95,6 +96,8 @@ Terraswap_ANC_UST_Pair = contact_addresses['terraswapAncUstPair']
 SPEC_token = contact_addresses['SPEC']
 MIR_token = contact_addresses['MIR']
 ANC_token = contact_addresses['ANC']
+bETH_token = contact_addresses['bETH']
+bLuna_token = contact_addresses['bLuna']
 
 # Connect to Testnet
 terra = LCDClient(chain_id=chain_id, url=public_node_url)
@@ -109,7 +112,7 @@ wallet = terra.wallet(mk)
 account_address = wallet.key.acc_address
 
 # Date of Today
-date_today = date.today()
+datetime_now = datetime.now()
 
 #----------------------------------
 #---------- SUPPORT DEF -----------
@@ -141,12 +144,10 @@ def write_cooldown(cooldowns):
     # Output: -
     # Action: Creates a file in the root folder, containing the last incl. date of the cooldown periode
     with open('X_Cooldowns.json', 'w') as fp:
-        
         # Stringify dates otherwise cannot be written into json
         for index in cooldowns:
-            cooldowns[index] = f'{cooldowns[index]:%Y-%m-%d}'
-        default_logger.debug(f'{cooldowns} has been written to X_Cooldowns.json')
-
+            cooldowns[index] = f'{cooldowns[index]:%Y-%m-%d %H:%M}'
+        default_logger.debug(f'[Script] {cooldowns} has been written to X_Cooldowns.json')
         json.dump(cooldowns, fp)
     fp.close
     pass
@@ -156,18 +157,18 @@ def read_cooldown():
     # If file does not exists create one and fill it with data
     if not os.path.isfile('X_Cooldowns.json'):
         with open('X_Cooldowns.json', 'w') as fp:
-            default_logger.debug(f'[SCRIPT] X_Cooldowns.json did not exist, so it was created.')
+            default_logger.debug(f'[Script] X_Cooldowns.json did not exist, so it was created.')
         fp.close
         return {}
     
     try:
         f = open('X_Cooldowns.json',)
         cooldowns = json.load(f)
-        default_logger.debug(f'[SCRIPT] X_Cooldowns.json has been read: {cooldowns}')
+        default_logger.debug(f'[Script] X_Cooldowns.json has been read: {cooldowns}')
         f.close
 
         for index in cooldowns:
-            cooldowns[index] = datetime.strptime(cooldowns[index], '%Y-%m-%d')
+            cooldowns[index] = datetime.strptime(cooldowns[index], '%Y-%m-%d %H:%M')
     except:
         # If there is anything wrong with the X_Cooldowns.json, it will just give an empty dict.
         return {}
@@ -178,8 +179,6 @@ def read_cooldown():
 #---------- QUERIES -----------
 #------------------------------
 # https://terra-money.github.io/terra-sdk-python/core_modules/wasm.html
-
-
 
 def get_ALL_rates():
     # Works only on the Mainnet
@@ -193,31 +192,49 @@ def get_ALL_rates():
 
 def get_ANC_rate():
 
-    return 1
+    if config.NETWORK == 'MAINNET':
+        SPEC_rate = ALL_rates['ANC']['price']
+    else:
+        SPEC_rate = 1
+    return SPEC_rate
 
 def get_MIR_rate():
 
-    return 1
+    if config.NETWORK == 'MAINNET':
+        MIR_rate = ALL_rates['MIR']['price']
+    else:
+        MIR_rate = 1
+    return MIR_rate
 
 def get_SPEC_rate():
 
-    return 1
+    if config.NETWORK == 'MAINNET':
+        SPEC_rate = ALL_rates['SPEC']['price']
+    else:
+        SPEC_rate = 1
+    return SPEC_rate
 
 def get_aUST_rate():
 
-    query = {
-        "epoch_state": {},
-    }
-    query_result = terra.wasm.contract_query(mmMarket, query)
+    if config.NETWORK == 'MAINNET':
+        aUST_rate = ALL_rates['aUST']['price']
+    else:
+        query = {
+            "epoch_state": {},
+        }
+        query_result = terra.wasm.contract_query(mmMarket, query)
 
-    aUST_rate = float(query_result['exchange_rate'])
+        aUST_rate = float(query_result['exchange_rate'])
     return aUST_rate
 
 
 def get_uluna_rate():
 
-    uluna_rate = float(int(str(terra.market.swap_rate(
-        Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))/1e6)
+    if config.NETWORK == 'MAINNET':
+        aUST_rate = ALL_rates['LUNA']['price']
+    else:
+        uluna_rate = float(int(str(terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))/1e6)
+
     return uluna_rate
 
 
@@ -362,6 +379,10 @@ def Mirror_get_position_info():
         lower_trigger_ratio = min_col_ratio + config.Mirror_lower_distance
         target_ratio = min_col_ratio + config.Mirror_target_distance
         upper_trigger_ratio = min_col_ratio + config.Mirror_upper_distance
+
+        collateral_loss_to_liq = float(-(shorted_asset_amount * min_col_ratio / collateral_amount_in_ust) + 1)
+        shorted_mAsset_gain_to_liq = float((collateral_amount_in_ust / min_col_ratio / shorted_asset_amount) - 1)
+
         distance_to_min_col = cur_col_ratio - min_col_ratio
 
         if cur_col_ratio < lower_trigger_ratio \
@@ -407,6 +428,8 @@ def Mirror_get_position_info():
             'lower_trigger_ratio': lower_trigger_ratio,
             'target_ratio': target_ratio,
             'upper_trigger_ratio': upper_trigger_ratio,
+            'collateral_loss_to_liq' : collateral_loss_to_liq,
+            'shorted_mAsset_gain_to_liq': shorted_mAsset_gain_to_liq,
             'action_to_be_executed': action_to_be_executed,
             'amount_to_execute_in_kind': amount_to_execute_in_kind,
             'amount_to_execute_in_ust': amount_to_execute_in_ust,
@@ -646,8 +669,14 @@ def Anchor_get_borrow_info():
             "borrower": account_address
         },
     }
-    borrow_limit_result = terra.wasm.contract_query(
-        mmOverseer, query_msg_borrow_limit)
+    borrow_limit_result = terra.wasm.contract_query(mmOverseer, query_msg_borrow_limit)
+
+    query_msg_collateral = {
+        "collaterals": {
+            "borrower": account_address
+        },
+    }
+    query_msg_collateral_result = terra.wasm.contract_query(mmOverseer, query_msg_collateral)
 
     query_msg_loan = {
         "borrower_info": {
@@ -657,21 +686,30 @@ def Anchor_get_borrow_info():
     }
     loan_amount_result = terra.wasm.contract_query(mmMarket, query_msg_loan)
 
-    query_msg_anchor_deposited = {
-        "balance": {
-            "address": account_address,
-        },
-    }
-    total_deposited_amount = terra.wasm.contract_query(
-        aTerra, query_msg_anchor_deposited)
-
     loan_amount = int(loan_amount_result['loan_amount']) / 1e6
+
+    collateral_dict = {}
+    for collateral in query_msg_collateral_result['collaterals']:
+        collateral_dict[collateral[0]] = collateral[1]
+
+    if collateral_dict.get(bETH_token) is not None:
+        amount_bETH_collateral = float(collateral_dict[bETH_token])
+    else:
+        amount_bETH_collateral = 0
+
+    if collateral_dict.get(bLuna_token) is not None:
+        amount_bLuna_collateral = float(collateral_dict[bLuna_token])/1e6
+    else:
+        amount_bLuna_collateral = 0
+
     borrow_limit = int(borrow_limit_result['borrow_limit']) / 1e6
-    total_deposited_amount = int(total_deposited_amount['balance']) / 1e6
+    total_collateral_value = borrow_limit / max_ltv_ratio
     cur_col_ratio = loan_amount / borrow_limit * max_ltv_ratio
     lower_trigger_ratio = max_ltv_ratio + config.Anchor_lower_distance
     upper_trigger_ratio = max_ltv_ratio + config.Anchor_upper_distance
     distance_to_max_ltv = cur_col_ratio - max_ltv_ratio
+
+    collateral_loss_to_liq = float(-(loan_amount / max_ltv_ratio / total_collateral_value) + 1)
 
     if cur_col_ratio > lower_trigger_ratio and \
             config.Anchor_enable_auto_repay_of_debt:
@@ -691,12 +729,17 @@ def Anchor_get_borrow_info():
         amount_to_execute_in_ust = 0
 
     Anchor_debt_info = {
+        
         'loan_amount': loan_amount,
+        'amount_bETH_collateral': amount_bETH_collateral,
+        'amount_bLuna_collateral': amount_bLuna_collateral,
+        'total_collateral_value': total_collateral_value,
         'borrow_limit': borrow_limit,
         'cur_col_ratio': cur_col_ratio,
         'lower_trigger_ratio': lower_trigger_ratio,
         'upper_trigger_ratio': upper_trigger_ratio,
         'distance_to_max_ltv': distance_to_max_ltv,
+        'collateral_loss_to_liq':collateral_loss_to_liq,
         'action_to_be_executed': action_to_be_executed,
         'amount_to_execute_in_ust': amount_to_execute_in_ust
     }
@@ -1101,6 +1144,7 @@ if __name__ == '__main__':
     global luna_col_multiplier, aUST_rate, uluna_rate, fee_estimation, fee
 
     luna_col_multiplier = get_luna_col_multiplier()
+    ALL_rates = get_ALL_rates()
     aUST_rate = get_aUST_rate()
     uluna_rate = get_uluna_rate()
     fee_estimation = get_fee_estimation()
@@ -1109,7 +1153,6 @@ if __name__ == '__main__':
 #-------------------------------
 #---------- MAIN DEF -----------
 #-------------------------------
-
 
 def keep_safe():
     try:
@@ -1369,7 +1412,7 @@ def keep_safe():
                 and current_UST_wallet_balance > general_estimated_tx_fee:
 
             # Check if we are in a cooldown period or if the key actually exists
-            if cooldowns.get('Anchor_borrow_cooldown') is None or cooldowns['Anchor_borrow_cooldown'] <= date_today:
+            if cooldowns.get('Anchor_borrow_cooldown') is None or cooldowns['Anchor_borrow_cooldown'] <= datetime_now:
 
                 Anchor_borrow_more_UST_tx = Anchor_borrow_more_UST(
                     Anchor_amount_to_execute_in_ust)
@@ -1386,10 +1429,10 @@ def keep_safe():
                         f'[Anchor Borrow] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
 
                     # Cooldown: Write date of today into cooldown dictionary
-                    cooldowns['Anchor_borrow_cooldown'] = date_today + timedelta(days=config.Anchor_borrow_cooldown)
+                    cooldowns['Anchor_borrow_cooldown'] = datetime_now + timedelta(days=config.Anchor_borrow_cooldown)
                     if config.Anchor_borrow_cooldown > 0:
                         report_logger.info(
-                            f'[Anchor Borrow] Cooldown limit has been activated. Next Anchor deposit will be possible on {date_today + timedelta(days=config.Anchor_borrow_cooldown)}')
+                            f'[Anchor Borrow] Cooldown limit has been activated. Next Anchor deposit will be possible on {(datetime_now + timedelta(days=config.Anchor_borrow_cooldown)):%Y-%m-%d}')
                 else:
                     default_logger.warning(f'Failed TX: {Anchor_borrow_more_UST_tx}.\n'
                                             f'Reason: {Anchor_borrow_more_UST_tx_status}')
@@ -1423,15 +1466,8 @@ def keep_safe():
         else:
             default_logger.debug(
                 f'[Anchor Deposit] Skipped because disabled by config ({config.Anchor_enable_deposit_borrowed_UST}) or deposit amount ({UST_balance_to_be_deposited_at_Anchor_Earn:.0f}) below deposit limit ({config.Anchor_min_deposit_amount:.0f})')
-    
-        default_logger.debug(f'\n[Anchor facts]\n'
-                            f'Loan Amount: {Anchor_borrow_info["loan_amount"]:.0f} UST\n'
-                            f'Borrow limit: {Anchor_borrow_info["borrow_limit"]:.0f} UST\n'
-                            f'Current LTV: {Anchor_borrow_info["cur_col_ratio"]:.2f}\n'
-                            f'Lower Trigger: {Anchor_borrow_info["lower_trigger_ratio"]:.2f}\n'
-                            f'Upper Trigger: {Anchor_borrow_info["upper_trigger_ratio"]:.2f}\n')
-    
-        default_logger.debug(f'-------------------------------------------\n'
+
+        default_logger.debug(f'\n-------------------------------------------\n'
                              f'---------- MIRROR SHORTS SECTION ----------\n'
                              f'-------------------------------------------\n')
 
@@ -1447,7 +1483,7 @@ def keep_safe():
                 if amount_to_execute_in_ust > config.Mirror_min_withdraw_limit_in_UST:
 
                     # Check if we are in a cooldown period or if the key actually exists
-                    if cooldowns.get(position_idx) is None or cooldowns[position_idx] <= date_today:
+                    if cooldowns.get(position_idx) is None or cooldowns[position_idx] <= datetime_now:
 
                         Mirror_withdraw_collateral_for_position_tx = Mirror_withdraw_collateral_for_position(
                             position_idx, amount_to_execute_in_kind, collateral_token_denom)
@@ -1461,10 +1497,10 @@ def keep_safe():
                                 f'[Mirror Shorts] {amount_to_execute_in_kind:.2f} {collateral_token_denom} with a value of {amount_to_execute_in_ust:.0f} UST of collateral have been withdrawn from your short position idx {position["position_idx"]}.')
                             
                             # Cooldown: Write date of today into cooldown dictionary
-                            cooldowns[position_idx] = date_today + timedelta(days=config.Mirror_withdraw_cooldown)
+                            cooldowns[position_idx] = datetime_now + timedelta(days=config.Mirror_withdraw_cooldown)
                             if config.Mirror_withdraw_cooldown > 0:
                                 report_logger.info(
-                                    f'[Mirror Shorts] Cooldown limit has been activated. Next withdraw for short position idx {position["position_idx"]} will be possible on {date_today + timedelta(days=config.Mirror_withdraw_cooldown)}')
+                                    f'[Mirror Shorts] Cooldown limit has been activated. Next withdraw for short position idx {position["position_idx"]} will be possible on {(datetime_now + timedelta(days=config.Mirror_withdraw_cooldown)):%Y-%m-%d}')
                         else:
                             default_logger.warning(f'Failed TX: {Mirror_withdraw_collateral_for_position_tx}.\n'
                                                     f'Reason: {Mirror_withdraw_collateral_for_position_tx_status}')
@@ -1541,31 +1577,105 @@ def keep_safe():
         default_logger.debug(   f'\n[CONFIG] Mirror_enable_deposit_collateral is set to ({config.Mirror_enable_deposit_collateral})\n'
                                 f'[CONFIG] Mirror_enable_withdraw_collateral is set to ({config.Mirror_enable_withdraw_collateral})')
 
+        default_logger.debug(f'\n-----------------------------------------\n'
+                            f'---------- BUREAUCRACY SECTION ----------\n'
+                            f'-----------------------------------------\n')
+
+        status_update = False
+
+        if config.Send_me_a_status_update and not config.Debug_mode:
+            if cooldowns.get('Staus_Report_cooldown') is None or cooldowns['Staus_Report_cooldown'] <= datetime_now:
+
+                status_update = ""
+
+                if Anchor_borrow_info["loan_amount"] > 0:
+                    status_update += f'    ___    _   __________  ______  ____  \n'   \
+                                    f'   /   |  / | / / ____/ / / / __ \/ __ \ \n'   \
+                                    f'  / /| | /  |/ / /   / /_/ / / / / /_/ / \n'   \
+                                    f' / ___ |/ /|  / /___/ __  / /_/ / _, _/  \n'   \
+                                    f'/_/  |_/_/ |_/\____/_/ /_/\____/_/ |_|   \n'   \
+                                    f'\n' \
+                                    f'bETH collateral: {Anchor_borrow_info["amount_bETH_collateral"]:.3f} bETH\n' \
+                                    f'bLuna collateral: {Anchor_borrow_info["amount_bLuna_collateral"]:.0f} bLuna\n' \
+                                    f'Total collateral: {Anchor_borrow_info["total_collateral_value"]:.0f} UST\n' \
+                                    f'Loan amount: {Anchor_borrow_info["loan_amount"]:.0f} UST\n' \
+                                    f'Borrow limit: {Anchor_borrow_info["borrow_limit"]:.0f} UST\n' \
+                                    f'Current LTV: {Anchor_borrow_info["cur_col_ratio"]*100:.0f} %\n' \
+                                    f'If all your collateral loses {Anchor_borrow_info["collateral_loss_to_liq"]*100:.0f}% you would get liquidated.\n' \
+                                    #  f'\n' \
+                                    #  f'\n'
+                
+                if len(Mirror_position_info) > 0:
+                    
+                    status_update +=    f'    __  ___________  ____  ____  ____  \n' \
+                                        f'   /  |/  /  _/ __ \/ __ \/ __ \/ __ \ \n' \
+                                        f'  / /|_/ // // /_/ / /_/ / / / / /_/ / \n' \
+                                        f' / /  / // // _, _/ _, _/ /_/ / _, _/  \n' \
+                                        f'/_/  /_/___/_/ |_/_/ |_|\____/_/ |_|   \n' \
+                                        f'\n'
+                    for position in Mirror_position_info:
+                        
+                        status_update +=  f'Position: {position["position_idx"]} - {position["mAsset_symbol"]}\n' \
+                                            f'Collateral value: {position["collateral_amount_in_kind"]:.0f} {position["collateral_token_denom"]}\n' \
+                                            f'Collateral value: {position["collateral_amount_in_ust"]:.0f} UST\n' \
+                                            f'Shorted Value in UST: {position["shorted_asset_amount"]:.0f} UST\n' \
+                                            f'Current LTV: {position["cur_col_ratio"]:.0f}\n' \
+                                            f'If all your collateral loses {position["collateral_loss_to_liq"]:.0f}%\n' \
+                                            f'or if {position["mAsset_symbol"]} raises by {(position["shorted_mAsset_gain_to_liq"]):.0f}% you would get liquidated.\n' \
+                                            f'\n'
+
+            # Cooldown: Write date of today into cooldown dictionary
+            cooldowns['Staus_Report_cooldown'] = datetime_now + timedelta(hours=config.Status_update_frequency)
+            if config.Send_me_a_status_update > 0:
+                report_logger.info(f'[Status Update] Cooldown limit has been activated. Next Status Report will be send on {(datetime_now + timedelta(hours=config.Status_update_frequency)):%Y-%m-%d %H:%M}')
+            
+            else:
+                try:
+                    default_logger.debug(f'[Status Update] Skipped because in cooldown period until ({cooldowns["Staus_Report_cooldown"]}).')
+                except:
+                    default_logger.debug(f'[Status Update] Something is wrong with the cooldowns["Staus_Report_cooldown"].')
+        else:
+            default_logger.debug(f'[Status Update] Skipped because disabled by config ({config.Send_me_a_status_update}) or Debug Mode is on ({config.Debug_mode}).')
+  
+        
     except LCDResponseError as err:
         default_logger.error(err)
 
     # Write cooldowns to file
-    write_cooldown(cooldowns)    
-
-    # Notify user
+    write_cooldown(cooldowns)
+    
+    # Write all from current report_logger to array
     report_content = report_array.getvalue()
-    print(report_array.getvalue())
-    if config.Send_me_a_report and not config.Debug_mode:
+    print(report_content) # Todo: Delete
+
+    # Notify user about something that has been done
+    if config.Send_me_a_report \
+        and not config.Debug_mode \
+        and len(report_content) > 0:
         if config.Notify_Slack:
             slack_webhook(report_content)
         if config.Notify_Telegram:
             telegram_notification(report_content)
         if config.Notify_Gmail:
             gmail_notification(report_content)
+    
+    # Notify user about status report
+    if status_update != False \
+        and not config.Debug_mode:
+        if config.Notify_Slack:
+            slack_webhook(status_update)
+        if config.Notify_Telegram:
+            telegram_notification(status_update)
+        if config.Notify_Gmail:
+            gmail_notification(status_update)    
+
     return True
 
 if __name__ == '__main__':
-    keep_safe = keep_safe()
-    default_logger.debug(f'[SCRIPT] Runtime of entire script: {(time.time() - begin_time):.0f}s')
-    print(f'[SCRIPT] Runtime of entire script: {(time.time() - begin_time):.0f}s')
+    keep_safe = keep_safe()    
     if not keep_safe:
-        default_logger.error(f'[SCRIPT] Something went wrong! - keep_safe() returned empty.')
-        print('[SCRIPT] Oh no!!! Something went wrong!')
+        default_logger.error(f'YOU NEED TO ACT! Something went wrong!')
+        print('YOU NEED TO ACT! Something went wrong!')
     else:
-        default_logger.debug(f'[SCRIPT] Script ran perfectly!')
-        print(f'[SCRIPT] Script ran perfectly!')
+        default_logger.debug(f'[Script] Run successful. Runtime: {(time.time() - begin_time):.0f}s')
+        print(f'[Script] Run successful. Runtime: {(time.time() - begin_time):.0f}s')
