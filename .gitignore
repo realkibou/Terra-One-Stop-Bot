@@ -1,7 +1,4 @@
 __pycache__/
 logs/
 B_Config.py
-X_Cooldowns.json
-X_EmailTempBody.txt
-X_test.py
-X_gitcmd.txt
+X_*.*

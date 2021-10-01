@@ -59,3 +59,21 @@ def email_notification(msg):
                   config.Email_subject + config.Email_address)
     except Exception:
         pass
+
+def gmail_notification(message):
+
+    import smtplib
+    from email.message import EmailMessage
+
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(config.GMAIL_ACCOUNT, config.GMAIL_APP_PASSWORD)
+
+    msg = EmailMessage()
+
+    message = f'{message}\n'
+    msg.set_content(message)
+    msg['Subject'] = config.EMAIL_SUBJECT
+    msg['From'] = config.EMAIL_FROM
+    msg['To'] = config.EMAIL_TO
+    server.send_message(msg)

@@ -42,7 +42,6 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 4. Borrows more UST from Anchor if you LTV allows it
     * `Anchor_enable_deposit_borrowed_UST` True/False auto borrow of more UST
     * `Anchor_upper_distance`Define upper_distance from maximal ltv ratio above more UST will be borrowed
-    * `Anchor_borrow_cooldown` Define cooldown period in days for the auto borrow function
     * `Anchor_min_borrow_limit` Define minimum borrow limit
 5. Deposits UST (from sale of MIR, SPEC, ANC and Borrow) in Anchor Earn to get more aUST
     * `Anchor_enable_deposit_borrowed_UST` True/False enable deposit of freshly gained UST (from the sale of SPEC, MIR & Mirror claim) into Anchor Earn
@@ -51,17 +50,19 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * `Mirror_enable_deposit_collateral` True/False deposit of collateral (Luna, UST, aUST supported)
     * `Mirror_lower_distance` Define lower_distance from minimal ratio below collateral will be deposited
     * `Mirror_target_distance` Define target_distance from minimal ratio that is restored when depoit/withdraw collateral
-    * `Mirror_min_deposit_limit` Define minimum deposit limit
+    * `Mirror_min_deposit_limit_in_UST` Define minimum deposit limit in UST
     * `Mirror_enable_withdraw_collateral` True/False withdraw of collateral
     * `Mirror_upper_distance` Define upper_distance from minimal ratio above collateral will be withdrawn
+    * `Anchor_borrow_cooldown` Define cooldown period in days for the auto borrow function
+    * `Mirror_min_withdraw_limit_in_UST` Define minimum withdraw limit in UST
     * `Mirror_withdraw_cooldown` Define cooldown period in days for the auto withdraw function
 7. Sends you a report on Telegram, Slack, Email, write log into ./logs
-    * `Debug_mod` True/False debug mode for default.log
+    * `Debug_mode` True/False debug mode for default.log
     * `Logging_detail` Define what level of detail each log shall show
     * `Send_me_a_report` True/False prepares an summary of what has happend, if something has happend. Always includes WARNINGs and ERRORs.
-    * `Notify_Telegram` True/False notifications to be recieved on Slack
-    * `Notify_Email` True/False notifications to be recieved on Telegram
-    * `Email_subject` True/False notifications to be recieved as an Email
+    * `Notify_Slack` True/False notifications to be recieved on Slack
+    * `Notify_Telegram` True/False notifications to be recieved on Telegram
+    * `Notify_Gmail` True/False notifications to be send through Gmail to any email
 8. Other
     * `safety_multiple_on_transaction_fees` Safety multiple on transaction fees
 
@@ -79,8 +80,8 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 - Since the LTV/min ratios on Mirror and Anchor are defined excatly opposite it each other, it may get confusing to set the `lower_distance`, `target_distance`, `upper_distance`. I wrote some explanations, but make sure you take time to understand it
 - All functions are set to False by default. Enable then one by one.
 - It's recommended to run this code in a contained environment at maximum security.
-- Deposits of collateral / repayments of debt are are limited by an amount. So if your collateral loses lots of value in one day, there will be multiple depoits / repayments per day to keep your funds safe.
-- If however, you collateral gains in value and you withdraw aUST from Mirror or borrow more UST form Anchor a time cooldown (which you can define) will act as a limit. If you set the cooldown to 3. Only once every 3 days collateral will be withdrawn / more UST will be borrowed.
+- Deposits / withdraws of collateral as well as repayments / borrowing of debt are are limited by an amount. So if your collateral loses lots of value in one day, there will be multiple depoits / repayments per day to keep your funds safe.
+- If however, your collateral gains in value and you withdraw aUST from Mirror or borrow more UST form Anchor a time cooldown (which you can define) will act as a limit. If you set the cooldown to 3. Only once every 3 days collateral will be withdrawn / more UST will be borrowed. This decreases the risk that one day your collateral value spikes, just to crash the next day.
 - Since a wallet seed is required, ensure you protect it and know what you're doing while using this automation
 - If you don't want to pass secrets into the B_Config.py file, make sure you declare as a system variable.
 - **Everything** will be logged into the `./logs` folder. Make sure you check those from time to time!
@@ -92,15 +93,14 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 4. Run  `pip3  install -r A_Requirements.txt`
 5. Run the script with a crontab *more options are in the development*
 
-## Slack Notification 
+## Slack Notification Setup
 If you use more Slack, it might be simpler to be notified in there using Slack Webhooks.
 1. Create a Slack APP
 2. Add the APP to a channel and get a webhook URL to feed the `B_Config.py`
 More information can be found via this link https://api.slack.com/incoming-webhooks
 
-## Telegram Notification
-If you want to be notified via Telegram, you'd need to get `access_token` and your `chat_id` from your Telegram bot.
-If you are not familiarized creating a Telegram bot, please follow steps below:
+## Telegram Notification Setup
+If you want to be notified via Telegram, you'd need to get `TELEGRAM_TOKEN` and your `TELEGRAM_CHAT_ID` from your Telegram bot.
 1. On Telegram, find `@BotFather` and open a DM.
 2. Use `/newbot` to create a new bot for yourself.
 3. Then, name the bot as you wish, ie: `MyCoolBot`
@@ -110,11 +110,21 @@ If you are not familiarized creating a Telegram bot, please follow steps below:
 7. To get your own `chat_id`, simply send a message in the group with your bot and run the following command below: `curl -s  https://api.telegram.org/botACCESSTOKEN/getUpdates` (replace `ACCESSTOKEN` with an actual token you just got from item #5).
 8. With  `access_token` and `chat_id` just feed the `B_Config.py` file.
 
+## Gmail Notification Setup
+To send emails from your Google account you need to get an `GMAIL_APP_PASSWORD`.
+1. Go to manage my Google account (https://myaccount.google.com/security)
+2. Under "Signing in to Google" confirm that "2-Step Verification" is "On" for the account.
+3. Under "Signing in to Google" select "App passwords".
+4. Select the app as "Mail" and the device as "Other (Custom name)" and name it (for example: One-Stop-Bot-Terra).
+5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
+
 ## Under development (in desc priority)
 - Email Notifications
+- Daily/weeky (what every you like) status info
 - Bundle of queries as this script is spaming queries like crazy
 - Bundle transactions (for example Swaps) to save fees
 - Run Mirror withdrawls before repay of Anchor Borrow to make use of that available aUST
+. Build a front end incl. a better way to run the script in intervals
 
 ## Similar projects
 - https://github.com/unl1k3ly/AnchorHODL
