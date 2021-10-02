@@ -58,14 +58,14 @@ default_logger.addHandler(report_handler)
 
 # Initiate network
 if config.NETWORK == 'MAINNET':
-    chain_id = 'columbus-4'
+    chain_id = 'columbus-5'
     public_node_url = 'https://lcd.terra.dev'
     contact_addresses = contact_addresses(network='MAINNET')
     rev_contact_addresses = rev_contact_addresses(contact_addresses)
     tx_look_up = f'https://finder.terra.money/{chain_id}/tx/'
 
 else:
-    chain_id = 'tequila-0004'
+    chain_id = 'bombay-12'
     public_node_url = 'https://bombay-fcd.terra.dev'
     contact_addresses = contact_addresses(network='TESTNET')
     rev_contact_addresses = rev_contact_addresses(contact_addresses)
@@ -99,6 +99,9 @@ ANC_token = contact_addresses['ANC']
 bETH_token = contact_addresses['bETH']
 bLuna_token = contact_addresses['bLuna']
 
+failed_tx_hash = contact_addresses['failed_tx_hash']
+success_tx_hash = contact_addresses['success_tx_hash']
+
 # Connect to Testnet
 terra = LCDClient(chain_id=chain_id, url=public_node_url)
 
@@ -127,7 +130,15 @@ def get_fee_estimation():
 
 def get_status_of_tx(tx_hash):
     # Input: Transaction hash
-    # Output: If the Transaction was successful returns True, otherwise the reeason why it failed
+    # Output: If the Transaction was successful returns True, otherwise the reason why it failed
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:
+        if config.Return_failed_tx:
+            return "Dummy reason for failed tx"
+        else:
+            return True
+
     try:
         status = terra.tx.tx_info(tx_hash).code
         if not status:
@@ -140,7 +151,7 @@ def get_status_of_tx(tx_hash):
         pass
 
 def write_cooldown(cooldowns):
-    # Input: -
+    # Input: Cooldowns list
     # Output: -
     # Action: Creates a file in the root folder, containing the last incl. date of the cooldown periode
     with open('X_Cooldowns.json', 'w') as fp:
@@ -231,7 +242,7 @@ def get_aUST_rate():
 def get_uluna_rate():
 
     if config.NETWORK == 'MAINNET':
-        aUST_rate = ALL_rates['LUNA']['price']
+        uluna_rate = ALL_rates['LUNA']['price']
     else:
         uluna_rate = float(int(str(terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))/1e6)
 
@@ -750,8 +761,14 @@ def Anchor_get_borrow_info():
 #------------------------------------------------
 # https://terra-money.github.io/terra-sdk-python/guides/transactions.html
 
-
 def Mirror_deposit_collateral_for_position(idx, collateral_amount_in_kind, denom):
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     # Depending on the denom, hence the token that was used for the collateral we need to change this tx's details
     if denom == 'aUST':
@@ -818,6 +835,13 @@ def Mirror_deposit_collateral_for_position(idx, collateral_amount_in_kind, denom
 
 def Mirror_withdraw_collateral_for_position(idx, collateral_amount_in_kind, denom):
 
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
+
     # Depending on the denom, hence the token that was used for the collateral we need to change this tx's details
     if denom == 'aUST':
         # https://finder.terra.money/tequila-0004/tx/10C1B6310DA5B16F5EE96F3535B99C9CD7DC5D696054D547C32A54F2317E930B
@@ -876,9 +900,13 @@ def Mirror_withdraw_collateral_for_position(idx, collateral_amount_in_kind, deno
 
 
 def Mirror_claim_unlocked_UST(Mirror_position_info):
-    # Input: Mirror_position_info
-    # Output:
-    # https://finder.terra.money/tequila-0004/tx/968436B83C3556FDD9AC7F590E05194F6B8E2B45BF5456291D0DB818C622E8E0
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     def position_idxs_to_be_claimed():
         position_idxs_to_be_claimed = []
@@ -903,8 +931,13 @@ def Mirror_claim_unlocked_UST(Mirror_position_info):
 
 
 def claim_MIR():
-    # Input:
-    # Output:
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     send = MsgExecuteContract(
         sender=wallet.key.acc_address,
@@ -921,9 +954,13 @@ def claim_MIR():
 
 
 def claim_SPEC():
-    # Input:
-    # Output:
-    # https://finder.terra.money/tequila-0004/tx/B42BE209EEBF3F4D3A2ED9F37A04651CAA5431A0DB6239E4D46D17FE65F44891
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     send = [MsgExecuteContract(
         sender=wallet.key.acc_address,
@@ -946,9 +983,13 @@ def claim_SPEC():
 
 
 def claim_ANC():
-    # Input:
-    # Output:
-    # https://finder.terra.money/tequila-0004/tx/EA2499249A738429320370E3380C2C50BABED25C0F3E2BD15F7CFDA37E4AA93F
+
+   # For debugging only
+    if config.Disable_all_transaction_defs:
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     send = MsgExecuteContract(
         sender=wallet.key.acc_address,
@@ -965,8 +1006,14 @@ def claim_ANC():
 
 
 def sell_MIR(amount):
-    # Input: Amount of MIR to sell
-    # https://finder.terra.money/tequila-0004/tx/50EFF091BECDAA44FE8654F8977AD62645D8C2DCA7CC7C5B87C96435BE345E7A
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
+
     # https://docs.terraswap.io/docs/howto/swap/
 
     send = MsgExecuteContract(
@@ -988,8 +1035,13 @@ def sell_MIR(amount):
 
 
 def sell_SPEC(amount):
-    # Input: Amount of SPEC to sell
-    # https://finder.terra.money/tequila-0004/tx/B2303E42ABA1E66F7466ACD7C87871013C9305DA73AC9FEADB7C5D81912C2706
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
+
     # https://docs.terraswap.io/docs/howto/swap/
 
     send = MsgExecuteContract(
@@ -1011,8 +1063,14 @@ def sell_SPEC(amount):
 
 
 def sell_ANC(amount):
-    # Input: Amount of ANC to sell
-    # Output:
+    
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
+
     # https://docs.terraswap.io/docs/howto/swap/
 
     send = MsgExecuteContract(
@@ -1035,8 +1093,12 @@ def sell_ANC(amount):
 
 def Anchor_deposit_UST_for_Earn(amount):
 
-    # Input: amount of UST to deposit on Anchor Earn
-    # Output:
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     amount = int(amount * 1e6)
 
@@ -1060,8 +1122,13 @@ def Anchor_deposit_UST_for_Earn(amount):
 
 
 def Anchor_withdraw_UST_from_Earn(amount, denom):
-    # Input: Amount of UST to withdraw
-    # Output:
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     # Convert amount UST into aUST for withdrawl and add a bit more for fees
     if denom == 'UST':
@@ -1090,9 +1157,13 @@ def Anchor_withdraw_UST_from_Earn(amount, denom):
 
 
 def Anchor_repay_debt_UST(amount):
-    # Input: Amount of UST to repay
-    # Output:
-    # https://finder.terra.money/tequila-0004/tx/7FDB09CC930C8529ABFF8111631A3A9B389AFC61A1EBAC10F6CB5D2FABD622B7
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     amount = int(amount * 1000000)
 
@@ -1116,6 +1187,13 @@ def Anchor_repay_debt_UST(amount):
 
 
 def Anchor_borrow_more_UST(amount):
+
+    # For debugging only
+    if config.Disable_all_transaction_defs:        
+        if config.Return_failed_tx:
+            return failed_tx_hash
+        else:
+            return success_tx_hash
 
     amount = int((amount * 1e6) + fee_estimation)
 
@@ -1177,6 +1255,7 @@ def keep_safe():
                              f'------------------------------------------\n')
 
         # Mirror: Claim & sell MIR
+
         if config.MIR_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_MIR = get_claimable_MIR()
@@ -1187,23 +1266,23 @@ def keep_safe():
                 claim_MIR_tx = claim_MIR()
                 claim_MIR_tx_status = get_status_of_tx(claim_MIR_tx)
 
-                if claim_MIR_tx_status:
-                    default_logger.debug(f'Success TX: {claim_MIR_tx}')
+                if claim_MIR_tx_status == True:
+                    default_logger.debug(f'[MIR Claim] Success TX: {claim_MIR_tx}')
                     sell_MIR_tx = sell_MIR(claimable_MIR)
                     sell_MIR_tx_status = get_status_of_tx(sell_MIR_tx)
-                    if sell_MIR_tx_status:
-                        default_logger.debug(f'Success TX: {sell_MIR_tx}')
+                    if sell_MIR_tx_status == True:
+                        default_logger.debug(f'[MIR Sell] Success TX: {sell_MIR_tx}')
                         report_logger.info(
                             f'[MIR Claim & Sell] {claimable_MIR:.2f} MIR have been claimed and sold for {value_of_MIR_claim:.2f} UST total.')
                         UST_balance_to_be_deposited_at_Anchor_Earn += value_of_MIR_claim
                         default_logger.debug(
-                            f'[MIR Claim & Sell] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                            f'[MIR Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
                     else:
-                        default_logger.warning(f'Failed TX: {sell_MIR_tx}.\n'
-                                               f'Reason: {sell_MIR_tx_status}')
+                        default_logger.warning(f'[MIR Sell] Failed TX: {sell_MIR_tx}.\n'
+                                               f'[MIR Sell] Reason: {sell_MIR_tx_status}')
                 else:
-                    default_logger.warning(f'Failed TX: {claim_MIR_tx}.\n'
-                                           f'Reason: {claim_MIR_tx_status}')
+                    default_logger.warning(f'[MIR Claim] Failed TX: {claim_MIR_tx}.\n'
+                                           f'[MIR Claim] Reason: {claim_MIR_tx_status}')
             else:
                 default_logger.debug(
                     f'[MIR Claim & Sell] Skipped because claimable MIR value ({value_of_MIR_claim:.2f}) below limit ({config.MIR_min_total_value:.0f}) or MIR price ({get_MIR_rate():.2f}) below limit ({config.MIR_min_price:.2f}).')
@@ -1222,23 +1301,23 @@ def keep_safe():
                 claim_SPEC_tx = claim_SPEC()
                 claim_SPEC_tx_status = get_status_of_tx(claim_SPEC_tx)
 
-                if claim_SPEC_tx_status:
-                    default_logger.debug(f'Success TX: {claim_SPEC_tx}')
+                if claim_SPEC_tx_status == True:
+                    default_logger.debug(f'[MIR Claim] Success TX: {claim_SPEC_tx}')
                     sell_SPEC_tx = sell_SPEC(claimable_SPEC)
                     sell_SPEC_tx_status = get_status_of_tx(sell_SPEC_tx)
-                    if sell_SPEC_tx_status:
-                        default_logger.debug(f'Success TX: {sell_SPEC_tx}')
+                    if sell_SPEC_tx_status == True:
+                        default_logger.debug(f'[MIR Sell] Success TX: {sell_SPEC_tx}')
                         report_logger.info(
                             f'[SPEC Claim & Sell] {claimable_SPEC:.2f} SPEC have been claimed and sold for {value_of_SPEC_claim:.2f} UST total.')
                         UST_balance_to_be_deposited_at_Anchor_Earn += value_of_SPEC_claim
                         default_logger.debug(
-                            f'[SPEC Claim & Sell] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                            f'[SPEC Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
                     else:
-                        default_logger.warning(f'Failed TX: {sell_SPEC_tx}.\n'
-                                               f'Reason: {sell_SPEC_tx_status}')
+                        default_logger.warning(f'[MIR Sell] Failed TX: {sell_SPEC_tx}.\n'
+                                               f'[MIR Sell] Reason: {sell_SPEC_tx_status}')
                 else:
-                    default_logger.warning(f'Failed TX: {claim_SPEC_tx}.\n'
-                                           f'Reason: {claim_SPEC_tx_status}')
+                    default_logger.warning(f'[MIR Claim] Failed TX: {claim_SPEC_tx}.\n'
+                                           f'[MIR Claim] Reason: {claim_SPEC_tx_status}')
             else:
                 default_logger.debug(
                     f'[SPEC Claim & Sell] Skipped because claimable SPEC value ({value_of_SPEC_claim:.2f}) below limit ({config.SPEC_min_total_value:.0f}) or SPEC price ({get_SPEC_rate():.2f}) below limit ({config.SPEC_min_price:.2f}).')
@@ -1257,23 +1336,23 @@ def keep_safe():
                 claim_ANC_tx = claim_ANC()
                 claim_ANC_tx_status = get_status_of_tx(claim_ANC_tx)
 
-                if claim_ANC_tx_status:
-                    default_logger.debug(f'Success TX: {claim_ANC_tx}')
+                if claim_ANC_tx_status == True:
+                    default_logger.debug(f'[ANC Claim] Success TX: {claim_ANC_tx}')
                     sell_ANC_tx = sell_ANC(claimable_ANC)
                     sell_ANC_tx_status = get_status_of_tx(sell_ANC_tx)
-                    if sell_ANC_tx_status:
-                        default_logger.debug(f'Success TX: {sell_ANC_tx}')
+                    if sell_ANC_tx_status == True:
+                        default_logger.debug(f'[ANC Sell] Success TX: {sell_ANC_tx}')
                         report_logger.info(
                             f'[ANC Claim & Sell] {claimable_ANC:.2f} ANC have been claimed and sold for {value_of_ANC_claim:.2f} UST total.')
                         UST_balance_to_be_deposited_at_Anchor_Earn += value_of_ANC_claim
                         default_logger.debug(
-                            f'[ANC Claim & Sell] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                            f'[ANC Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
                     else:
-                        default_logger.warning(f'Failed TX: {sell_ANC_tx}.\n'
-                                               f'Reason: {sell_ANC_tx_status}')
+                        default_logger.warning(f'[ANC Sell] Failed TX: {sell_ANC_tx}.\n'
+                                               f'[ANC Sell] Reason: {sell_ANC_tx_status}')
                 else:
-                    default_logger.warning(f'Failed TX: {claim_ANC_tx}.\n'
-                                           f'Reason: {claim_ANC_tx_status}')
+                    default_logger.warning(f'[ANC Claim] Failed TX: {claim_ANC_tx}.\n'
+                                           f'[ANC Claim] Reason: {claim_ANC_tx_status}')
             else:
                 default_logger.debug(
                     f'[ANC Claim & Sell] Skipped because claimable ANC value ({value_of_ANC_claim:.2f}) below limit ({config.ANC_min_total_value:.0f}) or ANC price ({get_ANC_rate():.2f}) below limit ({config.ANC_min_price:.2f}).')
@@ -1291,17 +1370,17 @@ def keep_safe():
                     Mirror_position_info)
                 Mirror_claim_unlocked_UST_tx_status = get_status_of_tx(
                     Mirror_claim_unlocked_UST_tx)
-                if Mirror_claim_unlocked_UST_tx_status:
+                if Mirror_claim_unlocked_UST_tx_status == True:
                     default_logger.debug(
                         f'Success TX: {Mirror_claim_unlocked_UST_tx}')
                     report_logger.info(
                         f'[Mirror Claim UST] {claimable_UST:.2f} UST have been claimed from your shorts on Mirror.')
                     UST_balance_to_be_deposited_at_Anchor_Earn += claimable_UST
                     default_logger.debug(
-                        f'[Mirror Claim UST] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                        f'[Mirror Claim UST] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
                 else:
-                    default_logger.warning(f'Failed TX: {Mirror_claim_unlocked_UST_tx}.\n'
-                                           f'Reason: {Mirror_claim_unlocked_UST_tx_status}')
+                    default_logger.warning(f'[Mirror Claim UST] Failed TX: {Mirror_claim_unlocked_UST_tx}.\n'
+                                           f'[Mirror Claim UST] Reason: {Mirror_claim_unlocked_UST_tx_status}')
             else:
                 default_logger.debug(
                     f'[Mirror Claim UST] Skipped because claimable UST amount ({claimable_UST:.0f}) below limit ({config.Mirror_min_amount_UST_to_claim:.0f}).')
@@ -1321,6 +1400,9 @@ def keep_safe():
         current_UST_wallet_balance = get_native_balance('uusd')
         current_aUST_wallet_balance = get_aUST_balance()
 
+        if Anchor_action_to_be_executed == 'none':
+            default_logger.debug(f'[Anchor] Current LTV at {(Anchor_borrow_info["cur_col_ratio"]*100):.0f} %.')
+
         if Anchor_action_to_be_executed == 'repay' \
                 and Anchor_amount_to_execute_in_ust > config.Anchor_min_repay_limit:
 
@@ -1330,14 +1412,14 @@ def keep_safe():
                     Anchor_amount_to_execute_in_ust)
                 Anchor_repay_debt_UST_tx_status = get_status_of_tx(
                     Anchor_repay_debt_UST_tx)
-                if Anchor_repay_debt_UST_tx_status:
+                if Anchor_repay_debt_UST_tx_status == True:
                     default_logger.debug(
-                        f'Success TX: {Anchor_repay_debt_UST_tx}')
+                        f'[Anchor Repay] Success TX: {Anchor_repay_debt_UST_tx}')
                     report_logger.info(
                         f'[Anchor Repay] {Anchor_amount_to_execute_in_ust:.2f} UST have been repaid to Anchor Borrow from your wallet.')
                 else:
-                    default_logger.warning(f'Failed TX: {Anchor_repay_debt_UST_tx}.\n'
-                                           f'Reason: {Anchor_repay_debt_UST_tx_status}')
+                    default_logger.warning(f'[Anchor Repay] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
+                                           f'[Anchor Repay] Reason: {Anchor_repay_debt_UST_tx_status}')
 
             # Otherwise check if the balance in the wallet + a withdrawl of UST from Anchor Earn would be enough, and withdraw what is needed
             elif config.Anchor_enable_withdraw_of_deposited_UST \
@@ -1350,24 +1432,24 @@ def keep_safe():
                 Anchor_withdraw_UST_from_Earn_tx_status = get_status_of_tx(
                     Anchor_withdraw_UST_from_Earn_tx)
 
-                if Anchor_withdraw_UST_from_Earn_tx_status:
+                if Anchor_withdraw_UST_from_Earn_tx_status == True:
                     default_logger.debug(
-                        f'Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
+                        f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
                     Anchor_repay_debt_UST_tx = Anchor_repay_debt_UST(
                         Anchor_amount_to_execute_in_ust)
                     Anchor_repay_debt_UST_tx_status = get_status_of_tx(
                         Anchor_repay_debt_UST_tx)
-                    if Anchor_repay_debt_UST_tx_status:
+                    if Anchor_repay_debt_UST_tx_status == True:
                         default_logger.debug(
-                            f'Success TX: {Anchor_repay_debt_UST_tx}')
+                            f'[Anchor Withdraw] Success TX: {Anchor_repay_debt_UST_tx}')
                         report_logger.info(
-                            f'[Withdraw] {Amount_to_be_withdrawn:.2f} UST have been withdrawn from your Anchor Earn and {Anchor_repay_debt_UST_tx:.2f} (incl. UST from your wallet) have been repaid to Anchor Borrow.')
+                            f'[Anchor Withdraw] {Amount_to_be_withdrawn:.2f} UST have been withdrawn from your Anchor Earn and {Anchor_repay_debt_UST_tx:.2f} (incl. UST from your wallet) have been repaid to Anchor Borrow.')
                     else:
-                        default_logger.warning(f'Failed TX: {Anchor_repay_debt_UST_tx}.\n'
-                                               f'Reason: {Anchor_repay_debt_UST_tx_status}')
+                        default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
+                                               f'[Anchor Withdraw] Reason: {Anchor_repay_debt_UST_tx_status}')
                 else:
-                    default_logger.warning(f'Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
-                                           f'Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
+                    default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
+                                           f'[Anchor Withdraw] Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
 
             # Otherwise (if allowed) withdraw what is available and repay what is possible if enough tx fees are available
             elif config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet \
@@ -1378,27 +1460,27 @@ def keep_safe():
                 Anchor_withdraw_UST_from_Earn_tx_status = get_status_of_tx(
                     Anchor_withdraw_UST_from_Earn_tx)
 
-                if Anchor_withdraw_UST_from_Earn_tx_status:
+                if Anchor_withdraw_UST_from_Earn_tx_status == True:
                     default_logger.debug(
-                        f'Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
+                        f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
 
                     Anchor_repay_debt_UST_tx = Anchor_repay_debt_UST(
                         get_native_balance('uusd') - general_estimated_tx_fee)
                     Anchor_repay_debt_UST_tx_status = get_status_of_tx(
                         Anchor_repay_debt_UST_tx)
 
-                    if Anchor_repay_debt_UST_tx_status:
+                    if Anchor_repay_debt_UST_tx_status == True:
                         default_logger.debug(
-                            f'Success TX: {Anchor_repay_debt_UST_tx}')
+                            f'[Anchor Repay] Success TX: {Anchor_repay_debt_UST_tx}')
                         report_logger.warning(f'[Anchor Repay] YOU NEED TO ACT! There was not enough availabe aUST to withdraw and not enough UST in your wallet to repay your Anchor Borrow.\n'
                                               f'{current_aUST_wallet_balance:.2f} aUST has been withdrawn, and combined with your availabe UST in your wallet, {Anchor_repay_debt_UST_tx:.2f} UST have been repaid to Anchor Borrow.')
                     else:
-                        default_logger.warning(f'Failed TX: {Anchor_repay_debt_UST_tx}.\n'
-                                               f'Reason: {Anchor_repay_debt_UST_tx_status}')
+                        default_logger.warning(f'[Anchor Repay] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
+                                               f'[Anchor Repay] Reason: {Anchor_repay_debt_UST_tx_status}')
 
                 else:
-                    default_logger.warning(f'Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
-                                           f'Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
+                    default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
+                                           f'[Anchor Withdraw] Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
             else:
                 default_logger.debug(
                     f'[Anchor Repay] Skipped because disabled by config Anchor_enable_withdraw_of_deposited_UST({config.Anchor_enable_withdraw_of_deposited_UST}) or\nAnchor_enable_partially_repay_if_not_enough_UST_in_wallet ({config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet}).')
@@ -1419,14 +1501,14 @@ def keep_safe():
                 Anchor_borrow_more_UST_tx_status = get_status_of_tx(
                     Anchor_borrow_more_UST_tx)
 
-                if Anchor_borrow_more_UST_tx_status:
+                if Anchor_borrow_more_UST_tx_status == True:
                     default_logger.debug(
-                        f'Success TX: {Anchor_borrow_more_UST_tx}')
+                        f'[Anchor Borrow] Success TX: {Anchor_borrow_more_UST_tx}')
                     report_logger.info(
                         f'[Anchor Borrow] {Anchor_amount_to_execute_in_ust:.2f} UST more has been borrowed from Anchor Borrow.')
                     UST_balance_to_be_deposited_at_Anchor_Earn += Anchor_amount_to_execute_in_ust
                     default_logger.debug(
-                        f'[Anchor Borrow] UST_balance_to_be_deposited_at_Anchor_Earn: {UST_balance_to_be_deposited_at_Anchor_Earn}.')
+                        f'[Anchor Borrow] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
 
                     # Cooldown: Write date of today into cooldown dictionary
                     cooldowns['Anchor_borrow_cooldown'] = datetime_now + timedelta(days=config.Anchor_borrow_cooldown)
@@ -1434,8 +1516,8 @@ def keep_safe():
                         report_logger.info(
                             f'[Anchor Borrow] Cooldown limit has been activated. Next Anchor deposit will be possible on {(datetime_now + timedelta(days=config.Anchor_borrow_cooldown)):%Y-%m-%d}')
                 else:
-                    default_logger.warning(f'Failed TX: {Anchor_borrow_more_UST_tx}.\n'
-                                            f'Reason: {Anchor_borrow_more_UST_tx_status}')
+                    default_logger.warning(f'[Anchor Borrow] Failed TX: {Anchor_borrow_more_UST_tx}.\n'
+                                            f'[Anchor Borrow] Reason: {Anchor_borrow_more_UST_tx_status}')
             else:
                 try:
                     default_logger.debug(f'[Anchor Borrow] Skipped because in cooldown period until ({cooldowns["Anchor_borrow_cooldown"]}).')
@@ -1455,14 +1537,14 @@ def keep_safe():
             Anchor_deposit_UST_for_Earn_tx_status = get_status_of_tx(
                 Anchor_deposit_UST_for_Earn_tx)
 
-            if Anchor_deposit_UST_for_Earn_tx_status:
+            if Anchor_deposit_UST_for_Earn_tx_status == True:
                 default_logger.debug(
-                    f'Success TX: {Anchor_deposit_UST_for_Earn_tx}')
+                    f'[Anchor Deposit] Success TX: {Anchor_deposit_UST_for_Earn_tx}')
                 report_logger.info(
                     f'[Anchor Deposit] {UST_balance_to_be_deposited_at_Anchor_Earn:.2f} UST have been deposited to Anchor Earn.')
             else:
-                default_logger.warning(f'Failed TX: {Anchor_deposit_UST_for_Earn_tx}.\n'
-                                       f'Reason: {Anchor_deposit_UST_for_Earn_tx_status}')
+                default_logger.warning(f'[Anchor Deposit] Failed TX: {Anchor_deposit_UST_for_Earn_tx}.\n'
+                                       f'[Anchor Deposit] Reason: {Anchor_deposit_UST_for_Earn_tx_status}')
         else:
             default_logger.debug(
                 f'[Anchor Deposit] Skipped because disabled by config ({config.Anchor_enable_deposit_borrowed_UST}) or deposit amount ({UST_balance_to_be_deposited_at_Anchor_Earn:.0f}) below deposit limit ({config.Anchor_min_deposit_amount:.0f})')
@@ -1490,9 +1572,9 @@ def keep_safe():
                         Mirror_withdraw_collateral_for_position_tx_status = get_status_of_tx(
                             Mirror_withdraw_collateral_for_position_tx)
 
-                        if Mirror_withdraw_collateral_for_position_tx_status:
+                        if Mirror_withdraw_collateral_for_position_tx_status == True:
                             default_logger.debug(
-                                f'Success TX: {Mirror_withdraw_collateral_for_position_tx}')
+                                f'[Mirror Shorts Withdraw] Success TX: {Mirror_withdraw_collateral_for_position_tx}')
                             report_logger.info(
                                 f'[Mirror Shorts] {amount_to_execute_in_kind:.2f} {collateral_token_denom} with a value of {amount_to_execute_in_ust:.0f} UST of collateral have been withdrawn from your short position idx {position["position_idx"]}.')
                             
@@ -1502,8 +1584,8 @@ def keep_safe():
                                 report_logger.info(
                                     f'[Mirror Shorts] Cooldown limit has been activated. Next withdraw for short position idx {position["position_idx"]} will be possible on {(datetime_now + timedelta(days=config.Mirror_withdraw_cooldown)):%Y-%m-%d}')
                         else:
-                            default_logger.warning(f'Failed TX: {Mirror_withdraw_collateral_for_position_tx}.\n'
-                                                    f'Reason: {Mirror_withdraw_collateral_for_position_tx_status}')
+                            default_logger.warning(f'[Mirror Shorts Withdraw] Failed TX: {Mirror_withdraw_collateral_for_position_tx}.\n'
+                                                    f'[Mirror Shorts Withdraw] Reason: {Mirror_withdraw_collateral_for_position_tx_status}')
                     else:
                         try:
                             default_logger.debug(f'[Mirror Shorts] Skipped because in cooldown period until ({cooldowns[position_idx]}) for position ({position_idx}).')
@@ -1539,17 +1621,16 @@ def keep_safe():
                         # If you have enough balance then deposit collateral
                         Mirror_deposit_collateral_for_position_tx = Mirror_deposit_collateral_for_position(
                             position_idx, amount_to_execute_in_kind, collateral_token_denom)
-                        Mirror_deposit_collateral_for_position_tx_status = get_status_of_tx(
-                            Mirror_deposit_collateral_for_position_tx)
+                        Mirror_deposit_collateral_for_position_tx_status = get_status_of_tx(Mirror_deposit_collateral_for_position_tx)
 
-                        if Mirror_deposit_collateral_for_position_tx_status:
+                        if Mirror_deposit_collateral_for_position_tx_status == True:
                             default_logger.debug(
-                                f'Success TX: {Mirror_deposit_collateral_for_position_tx}')
+                                f'[Mirror Shorts Deposit] Success TX: {Mirror_deposit_collateral_for_position_tx}')
                             report_logger.info(
                                 f'[Mirror Shorts] {amount_to_execute_in_kind:.2f} {collateral_token_denom:.2f} with a value of {amount_to_execute_in_ust:.2f} UST of collateral have been deposited to your short position idx {position["position_idx"]}.')
                         else:
-                            default_logger.warning(f'Failed TX: {Mirror_deposit_collateral_for_position_tx}.\n'
-                                                f'Reason: {Mirror_deposit_collateral_for_position_tx_status}')
+                            default_logger.warning(f'[Mirror Shorts Deposit] Failed TX: {Mirror_deposit_collateral_for_position_tx}.\n'
+                                                f'[Mirror Shorts Deposit] Reason: {Mirror_deposit_collateral_for_position_tx_status}')
                     else:
                         # If you have NOT enough balance then deposit what is possible
                         Mirror_deposit_collateral_for_position_tx = Mirror_deposit_collateral_for_position(
@@ -1557,14 +1638,14 @@ def keep_safe():
                         Mirror_deposit_collateral_for_position_tx_status = get_status_of_tx(
                             Mirror_deposit_collateral_for_position_tx)
 
-                        if Mirror_deposit_collateral_for_position_tx_status:
+                        if Mirror_deposit_collateral_for_position_tx_status == True:
                             default_logger.debug(
-                                f'Success TX: {Mirror_deposit_collateral_for_position_tx}')
+                                f'[Mirror Shorts Deposit] Success TX: {Mirror_deposit_collateral_for_position_tx}')
                             report_logger.warning(f'YOU NEED TO ACT! There was not enough availabe {collateral_token_denom:.2f} in your wallet to deposit your short position {position_idx} on Mirror.\n'
                                                 f'{available_balance:.2f} {collateral_token_denom:.2f} from your wallet, has been deposited in your short position {position_idx} on Mirror.')
                         else:
-                            default_logger.warning(f'Failed TX: {Mirror_deposit_collateral_for_position_tx}.\n'
-                                                f'Reason: {Mirror_deposit_collateral_for_position_tx_status}')
+                            default_logger.warning(f'[Mirror Shorts Deposit] Failed TX: {Mirror_deposit_collateral_for_position_tx}.\n'
+                                                f'[Mirror Shorts Deposit] Reason: {Mirror_deposit_collateral_for_position_tx_status}')
                 else:
                     default_logger.debug(f'[Mirror Shorts] For position {position_idx} amount to be deposited ({amount_to_execute_in_ust:.0f}) is below limit ({config.Mirror_min_deposit_limit_in_ust:.0f}).')
             
@@ -1667,7 +1748,7 @@ def keep_safe():
         if config.Notify_Telegram:
             telegram_notification(status_update)
         if config.Notify_Gmail:
-            gmail_notification(status_update)    
+            gmail_notification(status_update)
 
     return True
 

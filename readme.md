@@ -20,6 +20,7 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * If above: It will withdraw aUST to return to your defined ratio
     * If below: It will deposit more aUST to return to your defined ratio
 7. Sends you an update via Slack, Telegram or Email
+8. Other / Debugging mode
 
 *Due to the order of which the functions are executed, the priority is on a repayment of debt to Anchor rather than depositing more aUST into your shorts on Mirror, as crypto is more volatile than the legacy stock market.*
 
@@ -57,7 +58,6 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * `Mirror_min_withdraw_limit_in_UST` Define minimum withdraw limit in UST
     * `Mirror_withdraw_cooldown` Define cooldown period in days for the auto withdraw function
 7. Sends you a report on Telegram, Slack and/or Email when something was done. Also writes logs into ./logs and send you a status update if you want.
-    * `Debug_mode` True/False debug mode for default.log
     * `Logging_detail` Define what level of detail each log shall show
     * `Send_me_a_report` True/False prepares a summary of what has happened, if something has happened. Always includes WARNINGs and ERRORs.
     * `Notify_Slack` True/False notifications to be received on Slack
@@ -65,8 +65,11 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * `Notify_Gmail` True/False notifications to be send through Gmail to any email
     * `Send_me_a_status_update` True/False if you want to receive a status update anyway depending on your `Status_update_frequency` 
     * `Status_update_frequency` Define in what intervals (hours) you want to receive a status update
-8. Other
+9. Other / Debugging mode
     * `safety_multiple_on_transaction_fees` Safety multiple on transaction fees
+    * `Debug_mode` True/False debug mode for default.log
+    * `Disable_all_transaction_defs` True/False disables all transaction functions, by returning a fake transaction hash
+    * `Return_failed_tx` True/False if you want that transaction has to be a failed transaction hash
 
 ## What the script does NOT do:
 - Withdraws any UST from Anchor Borrow to deposit that new UST collateral on Mirror

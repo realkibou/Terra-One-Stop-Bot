@@ -4,7 +4,6 @@ import os
 
 # SETUP
 NETWORK = 'TESTNET' # TESTNET or MAINNET
-
 mnemonic = os.environ.get('MNEMONIC', '')
 
 # Read me: When to claim, sell, unstake? - What is the right min_total_value?
@@ -13,24 +12,29 @@ mnemonic = os.environ.get('MNEMONIC', '')
 # If the transaction fees are 2 UST, the break-even amount to sell/deposit would be (2 / 1.47% =) 136 UST.
 # If you would hold it for 2 month 2.96%, hence (2 / 2.96% =) 67 UST.
 
+# Break-even minimal withdraws 1 month or 2 months
+# Anchor Tx fees 2 UST -> 136 UST or 67 UST
+# Mirror Tx fees 0.5 UST -> 34 UST or 17 UST
+# Spec Tx fees 1.5 UST -> 102 UST or 51 UST
+# Anchor Earn roundtrip break-even for 1 day is about 9000 UST.
+
 # CLAIM & SELL MIR, SPEC. ANC REWARDS
-# min_price AND min_total_value must both be fulfilled for your token to be sold.
+# Important: min_price AND min_total_value must both be fulfilled for your token to be sold.
 MIR_claim_and_sell_token = False
-MIR_min_price = 4  # Min price acceptable to sell in UST
-# Min amount (qty * price in UST) to sell MIR tokens.
-MIR_min_total_value = 136
+MIR_min_price = 0.1  # Min price acceptable to sell in UST
+MIR_min_total_value = 17 # Min amount (qty * price in UST) to sell MIR tokens.
 
 SPEC_claim_and_sell_token = False
-SPEC_min_price = 6
-SPEC_min_total_value = 136
+SPEC_min_price = 0.1
+SPEC_min_total_value = 51
 
 ANC_claim_and_sell_token = False
-ANC_min_price = 2
-ANC_min_total_value = 136
+ANC_min_price = 0.1
+ANC_min_total_value = 67
 
 # MIRROR: CLAIMING UNLOCKED UST
 Mirror_claim_unlocked_UST = False
-Mirror_min_amount_UST_to_claim = 136
+Mirror_min_amount_UST_to_claim = 17
 
 # ANCHOR BORROW: MAINTAIN LTV RATIO / REPAY BORROWED UST IF REQUIRED
 # READ the example carefully, as Anchor works opposite for Mirror's liquidation ratio's logic.
@@ -49,47 +53,51 @@ Anchor_enable_auto_borrow_UST = False # If you want, you can tell the script to 
 Anchor_upper_distance = -0.2  # Upper distance above that a withdraw will be executed.
 #           If the collateral ratio is bigger than 0.6 + upper_distance (by default: 0.6 + -0.2 = 0.40 = 40%) it will withdrawl collateral.
 #           It will borrow more UST to get back to 0.6 + target_distance (by default: 0.6 + -0.15 = 0.45 = 45%).
-Anchor_min_borrow_limit = 136 # Set a minimum limit; otherwise the script may borrow continuously.
-Anchor_borrow_cooldown = 2 # Cooldown in days after collateral has been withdrawn. Example: 3 means it happens only once every 3 days.
+Anchor_min_borrow_limit = 67 # Set a minimum limit; otherwise the script may borrow continuously.
+Anchor_borrow_cooldown = 1 # Cooldown in days after collateral has been withdrawn. Example: 3 means it happens only once every 3 days.
 
 # ANCHOR EARN: DEPOSIT UST FROM SELLING ANC, MIR, SPEC
 Anchor_enable_deposit_borrowed_UST = False
-Anchor_min_deposit_amount = 136
+Anchor_min_deposit_amount = 67
 
 # MIRROR: MAINTAIN COLLATERAL RATIO / DEPOSIT COLATERAL IF REQUIRED
 # Example:  Let's say the minimum ratio for the given mAsset on Mirror is 150% or 1.5.
 #           The script will trigger a collateral deposit when 1.5 + lower_distance (by default: 1.5 + 0.1 = 1.6 = 160%) is reached.
 #           It will deposit enough collateral to get back to 1.5 + target_distance (by default: 1.5 + 0.2 = 1.7 = 170%).
 Mirror_enable_deposit_collateral = False
-Mirror_lower_distance = 0.1
-Mirror_target_distance = 0.2 
-Mirror_min_deposit_limit_in_UST = 20 # Even if a deposit is required to restor the required target_distance, it will not be excetuted if the min_deposit_limit_in_UST is not met.
+Mirror_lower_distance = 0.15
+Mirror_target_distance = 0.25 
+Mirror_min_deposit_limit_in_UST = 50 # Even if a deposit is required to restore the required target_distance, it will not be excetuted if the min_deposit_limit_in_UST is not met.
 
 # MIRROR: WITHDRAWL OF COLATERAL
 # If you want, you can tell the script to withdraw collateral if your set upper_distance allows it.
 Mirror_enable_withdraw_collateral = False
-Mirror_upper_distance = 0.3  # Upper distance above that a withdraw will be executed.
+Mirror_upper_distance = 0.35  # Upper distance above that a withdraw will be executed.
 #           If the collateral ratio is bigger than 1.5 + upper_distance (by default: 1.5 + 0.3 = 1.8 = 180%) it will withdrawl collateral.
 #           It will deposit enough collateral to get back to 1.5 + target_distance (by default: 1.5 + 0.2 = 1.7 = 170%).
-Mirror_min_withdraw_limit_in_UST = 136
-Mirror_withdraw_cooldown = 2 # Cooldown in days after collateral has been withdrawn. Example: 3 means it happens only once every 3 days. 0 means it will happen always.
+Mirror_min_withdraw_limit_in_UST = 17 # Tx fees are 0.5 UST
+Mirror_withdraw_cooldown = 1 # Cooldown in days after collateral has been withdrawn. Example: 3 means it happens only once every 3 days. 0 means it will happen always.
 
 # LOGGING
-Debug_mode = False   # If False, default.log will include almost everything. If False only WARNINGs and ERRORs will be logged.
-                    # Info: To avoid notification spam, ALL NOTIFICATIONS will be disabled in debug mode.
 Logging_detail = 'simple'  # detailed, moderate, simple. Recommended: simple.
-Send_me_a_report = False # Logs summary of what has happend, if something has happend send as by NOTIFICATIONS below defined.
-                        # Also, this report will always includes WARNINGS about failed transactions or insufficent wallet  balance. 
+Send_me_a_report = True # Logs summary of what has happend, if something has happend send as by NOTIFICATIONS below defined.
+                        # Also, this report will always includes WARNINGS about failed transactions or insufficent wallet balance. 
 
 # NOTIFICATIONS
 Notify_Slack = False
 Notify_Telegram = False
 Notify_Gmail = False
-Send_me_a_status_update = False # Even if nothing is done by the script, you can receive a status update with you key infos your Anchor / Positions.
-Status_update_frequency = 24 # In hours. 24 means once per 24h
+Send_me_a_status_update = True # Even if nothing is done by the script, you can receive a status update with you key infos your Anchor / Positions.
+Status_update_frequency = 24 # In hours. 24 means once per 24h.
 
-# GENERAL
-safety_multiple_on_transaction_fees = 3 # Transaction fees may fluctuate. Also several transactions may be executed in a row. This multiple gives you a margin of safety.
+# OTHER
+safety_multiple_on_transaction_fees = 2 # Transaction fees may fluctuate. Also several transactions may be executed in a row. This multiple gives you a margin of safety.
+
+# DEBUGGING
+Debug_mode = False   # If False, default.log will include almost everything. If False only WARNINGs and ERRORs will be logged.
+                    # Info: To avoid notification spam, ALL NOTIFICATIONS will be disabled in debug mode.
+Disable_all_transaction_defs = False # So you can test the script with your Mainnet account, but no transaction will be executed.
+Return_failed_tx = False # If Disable_all_transaction_def is False, you can return for all transaction_defs a failed transaction to test.
 
 # NOTIFICATION SETUP
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', 'Your Bot Token here') # See readme.md how to get this.

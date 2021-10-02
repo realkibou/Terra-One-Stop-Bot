@@ -2,7 +2,7 @@
 
 def contact_addresses(network):
     if network == 'MAINNET':
-        # columbus-4
+        # columbus-5
         contracts = {
             # Mirror https://docs.mirror.finance/networks#terra
             'Collector': 'terra1s4fllut0e6vw0k3fxsg4fs6fm2ad6hn0prqp3s',
@@ -73,10 +73,12 @@ def contact_addresses(network):
             'ANC': 'terra14z56l0fp2lsf86zy3hty2z47ezkhnthtr9yq76',
             'airdrop': 'terra146ahqn6d3qgdvmj8cj96hh03dzmeedhsf0kxqm',
             'team_vesting': 'terra1pm54pmw3ej0vfwn3gtn6cdmaqxt0x37e9jt0za',
-            'investor_vesting': 'terra10evq9zxk2m86n3n3xnpw28jpqwp628c6dzuq42'
+            'investor_vesting': 'terra10evq9zxk2m86n3n3xnpw28jpqwp628c6dzuq42',
+            'success_tx_hash': '42DE8348A333613EB013251DE2056EE301019DA8C2505935B24E8596AFD350A1',
+            'failed_tx_hash': '004DE6AFAD74853F89B2BFA1DF0B286692FA1D504AD7B9327E03D670C47E93D3'
         }
     else:
-        # Bombay-12
+        # bombay-12
         contracts = {
             # Mirror https://docs.mirror.finance/networks#terra
             'Collector': 'terra1v046ktavwzlyct5gh8ls767fh7hc4gxc95grxy',
@@ -149,7 +151,9 @@ def contact_addresses(network):
             "ANC": "terra1747mad58h0w4y589y3sk84r5efqdev9q4r02pc",
             "airdrop": "terra1u5ywhlve3wugzqslqvm8ks2j0nsvrqjx0mgxpk",
             "investor_vesting": "not available in testnet",
-            "team_vesting": "not available in testnet"
+            "team_vesting": "not available in testnet",
+            'success_tx_hash': 'BC00BDD340F8622679A8746CC0AC3474D87D3189F4F7263A77C873D3A3D9ED17',
+            'failed_tx_hash': 'E69D9B5B2325EE20B2194EB2A46A6584CC187F2FE2E0B2985774D1FD5810AE1E'
         }
     return contracts
 
