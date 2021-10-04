@@ -72,7 +72,8 @@ class Notifications:
 
         msg = EmailMessage()
 
-        message = MIMEText(message, "text")
+        # message = MIMEText(message, "html")
+
         msg.set_content(message)
         msg['Subject'] = config.EMAIL_SUBJECT
         msg['From'] = config.EMAIL_FROM
