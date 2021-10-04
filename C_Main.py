@@ -15,14 +15,11 @@
 # https://api.extraterrestrial.money/v1/api/prices
 
 # Terra SDK
-from terra_sdk.client.lcd import LCDClient
-from terra_sdk.key.mnemonic import MnemonicKey
 from terra_sdk.exceptions import LCDResponseError
 
 # Other assets
 import assets.Logging as logging_config
 from assets.Notifications import Notifications
-from assets.Contact_addresses import Contract_addresses
 from assets.Queries import Queries
 from assets.Transactions import Transaction
 from assets.Other import Cooldown
@@ -383,8 +380,10 @@ def keep_safe():
             amount_to_execute_in_ust = position["amount_to_execute_in_ust"]
             amount_to_execute_in_kind = position['amount_to_execute_in_kind']
             collateral_token_denom = position['collateral_token_denom']
+            within_market_hours = Queries().market_hours()
             # Check if position is marked for a withdraw
-            if (action_to_be_executed == 'withdraw'):
+            if (action_to_be_executed == 'withdraw') \
+                and within_market_hours:
                 if amount_to_execute_in_ust > config.Mirror_min_withdraw_limit_in_UST:
 
                     # Check if we are in a cooldown period or if the key actually exists
@@ -476,7 +475,7 @@ def keep_safe():
                 default_logger.debug(
                     f'[Mirror Shorts] Position {position_idx} is healthy. Current ratio is {position["cur_col_ratio"]:.2f}.')
             else:
-                default_logger.warning(f'[Mirror Shorts] Something went wrong with position {position_idx} and action {action_to_be_executed}.')
+                default_logger.warning(f'[Mirror Shorts] NYSE market is not open ({within_market_hours}) or something went wrong with position {position_idx} and action {action_to_be_executed}.')
         
         default_logger.debug(   f'\n[CONFIG] Mirror_enable_deposit_collateral is set to ({config.Mirror_enable_deposit_collateral})\n'
                                 f'[CONFIG] Mirror_enable_withdraw_collateral is set to ({config.Mirror_enable_withdraw_collateral})')

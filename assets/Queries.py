@@ -9,6 +9,7 @@ import B_Config as config
  
 # Other imports
 from datetime import datetime
+from time import mktime
 import requests
 
 class Queries:
@@ -41,6 +42,7 @@ class Queries:
         # https://docs.mirror.finance/contracts/staking
         self.Staking = self.contact_addresses['Staking']
         self.Lock = self.contact_addresses['Lock']
+        self.Oracle = self.contact_addresses['Oracle']
 
         self.mirrorFarm = self.contact_addresses['mirrorFarm']
         self.anchorFarm = self.contact_addresses['anchorFarm']
@@ -56,6 +58,7 @@ class Queries:
         self.ANC_token = self.contact_addresses['ANC']
         self.bETH_token = self.contact_addresses['bETH']
         self.bLuna_token = self.contact_addresses['bLuna']
+        self.mAAPL_token = self.contact_addresses['mAAPL']
 
         self.terra = LCDClient(chain_id=self.chain_id, url=self.public_node_url)
         self.mk = MnemonicKey(mnemonic=config.mnemonic) # Desire wallet via passphrase
@@ -651,3 +654,32 @@ class Queries:
                 return self.terra.tx.tx_info(tx_hash).rawlog
         except:
             return 'Status query of tx failed!'
+
+    def market_hours(self):
+
+        # Oracle query mAPPL
+        # https://fcd.terra.dev/wasm/contracts/terra1t6xe0txzywdg85n6k8c960cuwgh6l8esw6lau9/store?query_msg={"price":{"base_asset":"terra1vxtwu4ehgzz77mnfwrntyrmgl64qjs75mpwqaz","quote_asset":"uusd"}}
+        # 
+        # Oracle query mBTC
+        # https://fcd.terra.dev/wasm/contracts/terra1t6xe0txzywdg85n6k8c960cuwgh6l8esw6lau9/store?query_msg={"price":{"base_asset":"terra1rhhvx8nzfrx5fufkuft06q5marfkucdqwq5sjw","quote_asset":"uusd"}}
+        
+        # If the query for mAAPL returns a last_updated_base that is older than 2min, it will assume the market is closed        
+        # https://www.nasdaq.com/stock-market-trading-hours-for-nasdaq
+
+        query = {
+            "price": {
+                "base_asset": self.mAAPL_token,
+                "quote_asset":"uusd"
+            }
+        }
+        query_result = self.terra.wasm.contract_query(self.Oracle, query)
+
+        unix_last_price_update = query_result['last_updated_base']
+        unix_now = mktime(datetime.now().timetuple())
+
+        time_difference = unix_now - unix_last_price_update
+
+        if time_difference < 120: # 2 min = 60*2 = 120 seconds
+            return True
+        else:
+            return False

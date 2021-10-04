@@ -125,7 +125,6 @@ To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
-- Stop withdrawing collateral from Mirror, when no in market hours
 - Trying to get apscheduler to run the script in intervals
 - Bundle of queries as this script is spamming queries like crazy
 - Bundle transactions (for example Swaps) to save fees
