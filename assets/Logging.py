@@ -18,8 +18,7 @@ LOGGING_CONFIG = {
             'propagate': False
         },
         'report_logger': {
-            'level': 'INFO',
-            # As .info does not exists for default. This makes sure that also warnings are included in the report.
+            'level': 'INFO',  # As .info does not exists for default. This makes sure that also warnings are included in the report.
             'handlers': ['default', 'report'],
             'propagate': False
         },

@@ -91,6 +91,7 @@ Send_me_a_status_update = True # Even if nothing is done by the script, you can 
 Status_update_frequency = 24 # In hours. 24 means once per 24h.
 
 # OTHER
+Run_interval_for_Scheduler = 5 # in minutes. 5 means every 5 minutes
 safety_multiple_on_transaction_fees = 2 # Transaction fees may fluctuate. Also several transactions may be executed in a row. This multiple gives you a margin of safety.
 
 # DEBUGGING

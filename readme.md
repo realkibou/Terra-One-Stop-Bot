@@ -65,8 +65,9 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * `Notify_Gmail` True/False notifications to be send through Gmail to any email
     * `Send_me_a_status_update` True/False if you want to receive a status update anyway depending on your `Status_update_frequency` 
     * `Status_update_frequency` Define in what intervals (hours) you want to receive a status update
-9. Other / Debugging mode
-    * `safety_multiple_on_transaction_fees` Safety multiple on transaction fees
+8. Other / Debugging mode
+    * `Run_interval_for_Scheduler` Define the frequency how often the scheduler should run the bot
+    * `Safety_multiple_on_transaction_fees` Safety multiple on transaction fees
     * `Debug_mode` True/False debug mode for default.log
     * `Disable_all_transaction_defs` True/False disables all transaction functions, by returning a fake transaction hash
     * `Return_failed_tx` True/False if you want that transaction has to be a failed transaction hash
@@ -96,7 +97,7 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 2. Rename `B_Config_.py` to  `B_Config.py`
 3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*
 4. Run  `pip3  install -r A_Requirements.txt`
-5. Run the script with a crontab *more options are in the development*
+5. Run the script with a crontab or with the `D_Scheduler.py`
 
 ## Slack Notification Setup
 If you use more Slack, it might be simpler to be notified in there using Slack Webhooks.
@@ -124,10 +125,13 @@ To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
+- Stop withdrawing collateral from Mirror, when no in market hours
+- Trying to get apscheduler to run the script in intervals
 - Bundle of queries as this script is spamming queries like crazy
 - Bundle transactions (for example Swaps) to save fees
+- HTML Status Report (function is there, just not fromatted properly)
 - Run Mirror withdrawals before repay of Anchor Borrow to make use of that available aUST
-- Build a front end incl. a better way to run the script in intervals than crontab
+- Build a front end
 
 ## Similar projects
 - https://github.com/unl1k3ly/AnchorHODL
