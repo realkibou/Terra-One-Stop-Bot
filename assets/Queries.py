@@ -75,12 +75,21 @@ class Queries:
             return ALL_rates
 
         self.ALL_rates = get_ALL_rates()
-   
+
     def get_fee_estimation(self):
         estimation = self.terra.treasury.tax_cap('uusd')
-        fee = int(estimation.to_data().get('amount')) * \
-            config.Safety_multiple_on_transaction_fees 
-        return int(fee)
+        fee = int(estimation.to_data().get('amount'))
+        return int(fee) # returns the gas price in satoshis - means 1490000 for 1.49 UST 
+
+    def get_terra_gas_prices(self):
+        # return json with gas prices in all native currencies in a human form - means 0.456 uusd for example
+        try:
+            r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
+            r.raise_for_status()
+            if r.status_code == 200:
+                return r.json()
+        except requests.exceptions.HTTPError as err:
+            print(f"Could not fetch get_terra_gas_prices from Terra's FCD. Error message: {err}")
 
     def get_ANC_rate(self):
 

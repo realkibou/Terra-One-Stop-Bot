@@ -53,7 +53,7 @@ default_logger.addHandler(report_handler)
 
 datetime_now = datetime.now()
 aUST_rate = Queries().get_aUST_rate()
-general_estimated_tx_fee = Queries().get_fee_estimation() / 1e6
+general_estimated_tx_fee = float(Queries().get_fee_estimation()/1e6)
 
 #-------------------------------
 #---------- MAIN DEF -----------

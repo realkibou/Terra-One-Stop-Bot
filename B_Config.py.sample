@@ -71,6 +71,7 @@ Mirror_min_deposit_limit_in_UST = 50 # Even if a deposit is required to restore 
 
 # MIRROR: WITHDRAWL OF COLATERAL
 # If you want, you can tell the script to withdraw collateral if your set upper_distance allows it.
+# Withdrawls are only allowed for legacy assets within the market hours of the NYSE. The script checks for that.
 Mirror_enable_withdraw_collateral = False
 Mirror_upper_distance = 0.35  # Upper distance above that a withdraw will be executed.
 #           If the collateral ratio is bigger than 1.5 + upper_distance (by default: 1.5 + 0.3 = 1.8 = 180%) it will withdrawl collateral.
@@ -92,7 +93,8 @@ Status_update_frequency = 24 # In hours. 24 means once per 24h.
 
 # OTHER
 Run_interval_for_Scheduler = 5 # in minutes. 5 means every 5 minutes
-safety_multiple_on_transaction_fees = 2 # Transaction fees may fluctuate. Also several transactions may be executed in a row. This multiple gives you a margin of safety.
+Safety_multiple_on_transaction_fees = 2 # Transaction fees may fluctuate. Also several transactions may be executed in a row. This multiple gives you a margin of safety.
+Fee_multiplier_for_expensive_transactions = 1.6 # Some transactions are more expensive than others. Anchor for example.
 
 # DEBUGGING
 Debug_mode = False   # If False, default.log will include almost everything. If False only WARNINGs and ERRORs will be logged.

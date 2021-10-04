@@ -68,6 +68,7 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 8. Other / Debugging mode
     * `Run_interval_for_Scheduler` Define the frequency how often the scheduler should run the bot
     * `Safety_multiple_on_transaction_fees` Safety multiple on transaction fees
+    * `Fee_multiplier_for_expensive_transactions` Some transactions are more expensive than others. Anchor for example. This is adjusted here.
     * `Debug_mode` True/False debug mode for default.log
     * `Disable_all_transaction_defs` True/False disables all transaction functions, by returning a fake transaction hash
     * `Return_failed_tx` True/False if you want that transaction has to be a failed transaction hash
@@ -94,7 +95,7 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 
 ## How to install it
 1. `git clone` this repository
-2. Rename `B_Config_.py` to  `B_Config.py`
+2. Rename `B_Config.py.sample` to  `B_Config.py`
 3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*
 4. Run  `pip3  install -r A_Requirements.txt`
 5. Run the script with a crontab or with the `D_Scheduler.py`
@@ -125,7 +126,8 @@ To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
-- Trying to get apscheduler to run the script in intervals
+- The claim_SPEC needs to check first, of you actually have SPEC to withdraw in that farms, otherwise it will fail.
+- Trying to get apscheduler to run the script in intervals (currently not working. Cannot figure out why. If someone can help. I would appreciate it.)
 - Bundle of queries as this script is spamming queries like crazy
 - Bundle transactions (for example Swaps) to save fees
 - HTML Status Report (function is there, just not fromatted properly)
