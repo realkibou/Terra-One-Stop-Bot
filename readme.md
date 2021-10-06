@@ -6,12 +6,12 @@ Then, this bot is for you!
 Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra.
 
 ## Thank you!
-If this script is helpful to you and helps maximize your gainz, feel free to donate a bit to **terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg**. This will also keep the development going and the script up-to-date. Thank you! :)
+If this bot is helpful to you and helps maximize your gainz, feel free to donate a bit to **terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg**. This will also keep the development going and the bot up-to-date. Thank you! :)
 
 *Special thanks to unl1k3ly as his bot taught me what I needed to know. Thanks Terra, Mirror, Spectrum, Anchor team and the Terra Community!*
 
-## What this script does
-1. Claims and sells your un-claimed MIR, SPEC, ANC tokens
+## What this One-Stop-Bot does
+1. Claims and sells your unclaimed MIR, SPEC, ANC tokens
 2. Claims unlocked UST on Mirror
 3. Repays debt at Anchor if your LTV requires it
 4. Borrows more UST from Anchor if you LTV allows it
@@ -20,16 +20,19 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * If above: It will withdraw aUST to return to your defined ratio
     * If below: It will deposit more aUST to return to your defined ratio
 7. Sends you an update via Slack, Telegram or Email
-8. Other / Debugging mode
+8. Runs the bot at your defined intervals
+9. Runs in debug mode
+10. Logs information for you
+11. Other stuff
 
 *Due to the order of which the functions are executed, the priority is on a repayment of debt to Anchor rather than depositing more aUST into your shorts on Mirror, as crypto is more volatile than the legacy stock market.*
 
 ## What can be configured
 *Almost* **everything** can be configured in the `B_config.py`.
-1. Sells your un-claimed MIR, SPEC tokens
-    * `XXX_claim_and_sell_token` True/False sale of SPEC, MIR, ANC
-    * `XXX_min_price` Define a minimum price for MIR/SPEC
-    * `XXX_min_total_value` Define a minimum sales value (= price of token * amount to sell) for MIR/SPEC
+1. Sells your unclaimed MIR, SPEC tokens
+    * `XXX_claim_and_sell_token` True/False sale of SPEC, MIR, ANC (SPEC gets claimed from all your farms Mirror, Anchor, Pylon and Spectrum)
+    * `XXX_min_price` Define a minimum price for SPEC, MIR, ANC
+    * `XXX_min_total_value` Define a minimum sales value (= price of token * amount to sell) for SPEC, MIR, ANC
 2. Claims unlocked UST on Mirror
 	* `Mirror_claim_unlocked_UST` True/False claim of unlocked UST
 	* `Mirror_min_amount_UST_to_claim` Define a minimum of unlocked UST to be claimed
@@ -57,40 +60,44 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
     * `Anchor_borrow_cooldown` Define cooldown period in days for the auto borrow function
     * `Mirror_min_withdraw_limit_in_UST` Define minimum withdraw limit in UST
     * `Mirror_withdraw_cooldown` Define cooldown period in days for the auto withdraw function
-7. Sends you a report on Telegram, Slack and/or Email when something was done. Also writes logs into ./logs and send you a status update if you want.
-    * `Logging_detail` Define what level of detail each log shall show
+7. Sends you a report on Telegram, Slack and/or Email if something has been done. Also writes logs into ./logs and sends you a status update if you want.
     * `Send_me_a_report` True/False prepares a summary of what has happened, if something has happened. Always includes WARNINGs and ERRORs.
     * `Notify_Slack` True/False notifications to be received on Slack
     * `Notify_Telegram` True/False notifications to be received on Telegram
     * `Notify_Gmail` True/False notifications to be send through Gmail to any email
     * `Send_me_a_status_update` True/False if you want to receive a status update anyway depending on your `Status_update_frequency` 
     * `Status_update_frequency` Define in what intervals (hours) you want to receive a status update
-8. Other / Debugging mode
+    * `Status_update_time` Define at what time you want to receive the status update
+8. Runs the bot at your defined intervals
     * `Run_interval_for_Scheduler` Define the frequency how often the scheduler should run the bot
-    * `Safety_multiple_on_transaction_fees` Safety multiple on transaction fees
-    * `Fee_multiplier_for_expensive_transactions` Some transactions are more expensive than others. Anchor for example. This is adjusted here.
+9. Debug
     * `Debug_mode` True/False debug mode for default.log
     * `Disable_all_transaction_defs` True/False disables all transaction functions, by returning a fake transaction hash
-    * `Return_failed_tx` True/False if you want that transaction has to be a failed transaction hash
+    * `Return_failed_tx` True/False if you want that transaction to be a failed transaction hash
+10. Logging
+    * `Logging_detail` Define what level of detail each log shall show
+11. Other stuff
+    * `Safety_multiple_on_transaction_fees` Safety multiple on transaction fees
+    * `Fee_multiplier_for_expensive_transactions` Some transactions are more expensive than others. Anchor for example. This is adjusted here.
 
-## What the script does NOT do:
+## What the One-Stop-Bot does NOT do:
 - Withdraws any UST from Anchor Borrow to deposit that new UST collateral on Mirror
 - Deposits any UST to Anchor Earn to deposit that new aUST as collateral on Mirror
-- Sells, buys, swaps any Luna to deposits it as collateral on Mirror
-- Uses withdrawn aUST or UST from Mirror to repay your Anchor Borrow debt (if you run the script often enough of course it will loop and eventually repay that debt.)
-- If you withdraw pool rewards, sell them, claim UST etc. and it is still not enough UST to exceed the `config.Anchor_min_deposit_amount` that UST will just remain in your wallet. They will NOT be "remembere" for the next run of the script.
+- Sells, buys, swaps any Luna to deposit it as collateral on Mirror
+- Uses withdrawn aUST or UST from Mirror to repay your Anchor Borrow debt (if you run the One-Stop-Bot often enough of course it will loop and eventually repay that debt.)
+- If you withdraw pool rewards, sell them, claim UST etc. and it is still not enough UST to exceed the `config.Anchor_min_deposit_amount` that UST will just remain in your wallet. They will NOT be "remembered" for the next run of the One-Stop-Bot.
 
 ## Very important remarks!
-- This script is quite heavy, so do not run it too short intervals. It currently runs at around 30 sec to 1 min. Depending on your internet connection.
-- Use this bot on your own risk. I have done my best to check it, but program bugs & human bugs happen.
-- This bot can be used with the Testnet. I strongly recommend to playing on the Testnet first, before letting it manage your funds. Here you can get free UST, LUNA etc: https://faucet.terra.money/
-- Since the LTV/min ratios on Mirror and Anchor are defined exactly opposite it each other, it may get confusing to set the `lower_distance`, `target_distance`, `upper_distance`. I wrote some explanations, but make sure you take time to understand it
-- All functions are set to False by default. Enable then one by one.
+- This bot is quite heavy, so do not run it too short intervals. It currently runs at around 1 min. Depending on your internet connection.
+- Use this bot at your own risk. I have done my best to check it, but program bugs & human bugs happen.
+- This bot can be used with the Testnet. I strongly recommend playing on the Testnet or with `Disable_all_transaction_defs` set to True first, before letting it manage your funds. Here you can get free UST, LUNA etc: https://faucet.terra.money/
+- Since the LTV/min ratios on Mirror and Anchor are defined exactly opposite each other, it may get confusing to set the `lower_distance`, `target_distance`, `upper_distance`. I wrote some explanations, but make sure you take time to understand it
+- For your own safety all functions are set to False by default. Enable them one by one.
 - It's recommended to run this code in a contained environment at maximum security.
-- Deposits / withdraws of collateral as well as repayments / borrowing of debt are limited by an amount. So if your collateral loses lots of value in one day, there will be multiple deposits / repayments per day to keep your funds safe.
-- If however, your collateral gains in value and you withdraw aUST from Mirror or borrow more UST form Anchor a time cooldown (which you can define) will act as a limit. If you set the cooldown to 3, only once every 3 days collateral will be withdrawn from Mirror / more UST will be borrowed from Anchor. This decreases the risk / transaction fees when one day your collateral value spikes, just to crash the next day.
+- Deposits / withdrawals of collateral as well as repayments / borrowing of debt are limited by an amount. So if your collateral loses lots of value in one day, there will be multiple deposits / repayments per day to keep your funds safe.
+- If however, your collateral gains in value and you withdraw aUST from Mirror or borrow more UST from Anchor a time cooldown (which you can define) will act as a limit. If you set the cooldown to 3, only once every 3 days collateral will be withdrawn from Mirror / more UST will be borrowed from Anchor. This decreases the risk / transaction fees when one day your collateral value spikes, just to crash the next day.
 - Since a wallet seed is required, ensure you protect it and know what you're doing while using this automation
-- If you don't want to pass secrets into the B_Config.py file, make sure you declare as a system variable.
+- If you don't want to pass secrets into the B_Config.py file, make sure you declare it as a system variable.
 - **Everything** will be logged into the `./logs` folder. Make sure you check those from time to time!
 
 ## How to install it
@@ -98,10 +105,11 @@ If this script is helpful to you and helps maximize your gainz, feel free to don
 2. Rename `B_Config.py.sample` to  `B_Config.py`
 3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*
 4. Run  `pip3  install -r A_Requirements.txt`
-5. Run the script with a crontab or with the `D_Scheduler.py`
+5. Run the One-Stop-Bot with a crontab directly or with the `D_Scheduler.py`
+6. If you think you understood the bot and tested it set `Disable_all_transaction_defs` to False.
 
 ## Slack Notification Setup
-If you use more Slack, it might be simpler to be notified in there using Slack Webhooks.
+If you use more Slack, it might be simpler to be notified there using Slack Webhooks.
 1. Create a Slack APP
 2. Add the APP to a channel and get a webhook URL to feed the `B_Config.py`
 More information can be found via this link https://api.slack.com/incoming-webhooks
@@ -126,11 +134,9 @@ To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
-- The claim_SPEC needs to check first, of you actually have SPEC to withdraw in that farms, otherwise it will fail.
-- Trying to get apscheduler to run the script in intervals (currently not working. Cannot figure out why. If someone can help. I would appreciate it.)
-- Bundle of queries as this script is spamming queries like crazy
+- Bundle of queries as this One-Stop-Bot is spamming queries like crazy
 - Bundle transactions (for example Swaps) to save fees
-- HTML Status Report (function is there, just not fromatted properly)
+- HTML Status Report (function is there, just not formatted properly)
 - Run Mirror withdrawals before repay of Anchor Borrow to make use of that available aUST
 - Build a front end
 

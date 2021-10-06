@@ -1,100 +1,27 @@
+#!/usr/bin/python3
+
 # Terra SDK
-from terra_sdk.client.lcd import LCDClient
-from terra_sdk.key.mnemonic import MnemonicKey
 from terra_sdk.core.coins import Coin
 
 # Other assets
-from assets.Contact_addresses import Contract_addresses
+from assets.Terra import Terra
 import B_Config as config
  
 # Other imports
 from datetime import datetime
 from time import mktime
-import requests
 
 class Queries:
-    # https://terra-money.github.io/terra-sdk-python/core_modules/wasm.html
-    def __init__(self):
-
-        if config.NETWORK == 'MAINNET':
-            self.chain_id = 'columbus-5'
-            self.public_node_url = 'https://lcd.terra.dev'
-            self.tx_look_up = f'https://finder.terra.money/{self.chain_id}/tx/'            
-            self.contact_addresses = Contract_addresses.contact_addresses(network='MAINNET')
-            self.rev_Contract_addresses = Contract_addresses.rev_contact_addresses(self.contact_addresses)
-
-        else:
-            self.chain_id = 'bombay-12'
-            self.public_node_url = 'https://bombay-lcd.terra.dev'
-            self.tx_look_up = f'https://finder.terra.money/{self.chain_id}/tx/'
-            self.contact_addresses = Contract_addresses.contact_addresses(network='bombay-12')
-            self.rev_Contract_addresses = Contract_addresses.rev_contact_addresses(self.contact_addresses)
-
-        # Contracts required
-        self.mmMarket = self.contact_addresses['mmMarket']
-        self.mmOverseer = self.contact_addresses['mmOverseer']
-        self.aTerra = self.contact_addresses['aTerra']
-
-        # https://docs.mirror.finance/contracts/mint
-        self.Mint = self.contact_addresses['Mint']
-        # https://docs.mirror.finance/contracts/collateral-oracle  
-        self.Collateral_Oracle = self.contact_addresses['Collateral Oracle']
-        # https://docs.mirror.finance/contracts/staking
-        self.Staking = self.contact_addresses['Staking']
-        self.Lock = self.contact_addresses['Lock']
-        self.Oracle = self.contact_addresses['Oracle']
-
-        self.mirrorFarm = self.contact_addresses['mirrorFarm']
-        self.anchorFarm = self.contact_addresses['anchorFarm']
-        self.specFarm = self.contact_addresses['specFarm']
-        self.pylonFarm = self.contact_addresses['pylonFarm']
-
-        self.Terraswap_MIR_UST_Pair = self.contact_addresses['Terraswap MIR-UST Pair']
-        self.Spectrum_SPEC_UST_Pair = self.contact_addresses['Spectrum SPEC-UST Pair']
-        self.Terraswap_ANC_UST_Pair = self.contact_addresses['terraswapAncUstPair']
-
-        self.SPEC_token = self.contact_addresses['SPEC']
-        self.MIR_token = self.contact_addresses['MIR']
-        self.ANC_token = self.contact_addresses['ANC']
-        self.bETH_token = self.contact_addresses['bETH']
-        self.bLuna_token = self.contact_addresses['bLuna']
-        self.mAAPL_token = self.contact_addresses['mAAPL']
-
-        self.terra = LCDClient(chain_id=self.chain_id, url=self.public_node_url)
-        self.mk = MnemonicKey(mnemonic=config.mnemonic) # Desire wallet via passphrase
-        self.wallet = self.terra.wallet(self.mk) # Define what wallet to use
-        self.account_address = self.wallet.key.acc_address # Account Add
-
-        def get_ALL_rates():
-            # Works only on the Mainnet
-            r = requests.get('https://api.extraterrestrial.money/v1/api/prices')
-            ALL_rates = r.json()
-
-            ALL_rates = {**ALL_rates.pop('prices'), **ALL_rates}
-
-            return ALL_rates
-
-        self.ALL_rates = get_ALL_rates()
 
     def get_fee_estimation(self):
-        estimation = self.terra.treasury.tax_cap('uusd')
+        estimation = Terra().terra.treasury.tax_cap('uusd')
         fee = int(estimation.to_data().get('amount'))
         return int(fee) # returns the gas price in satoshis - means 1490000 for 1.49 UST 
-
-    def get_terra_gas_prices(self):
-        # return json with gas prices in all native currencies in a human form - means 0.456 uusd for example
-        try:
-            r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
-            r.raise_for_status()
-            if r.status_code == 200:
-                return r.json()
-        except requests.exceptions.HTTPError as err:
-            print(f"Could not fetch get_terra_gas_prices from Terra's FCD. Error message: {err}")
 
     def get_ANC_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            SPEC_rate = self.ALL_rates['ANC']['price']
+            SPEC_rate = Terra().ALL_rates['ANC']['price']
         else:
             SPEC_rate = 1
         return SPEC_rate
@@ -102,7 +29,7 @@ class Queries:
     def get_MIR_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            MIR_rate = self.ALL_rates['MIR']['price']
+            MIR_rate = Terra().ALL_rates['MIR']['price']
         else:
             MIR_rate = 1
         return MIR_rate
@@ -110,7 +37,7 @@ class Queries:
     def get_SPEC_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            SPEC_rate = self.ALL_rates['SPEC']['price']
+            SPEC_rate = Terra().ALL_rates['SPEC']['price']
         else:
             SPEC_rate = 1
         return SPEC_rate
@@ -118,12 +45,12 @@ class Queries:
     def get_aUST_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            aUST_rate = self.ALL_rates['aUST']['price']
+            aUST_rate = Terra().ALL_rates['aUST']['price']
         else:
             query = {
                 "epoch_state": {},
             }
-            query_result = self.terra.wasm.contract_query(self.mmMarket, query)
+            query_result = Terra().terra.wasm.contract_query(Terra().mmMarket, query)
 
             aUST_rate = float(query_result['exchange_rate'])
         return aUST_rate
@@ -132,9 +59,9 @@ class Queries:
     def get_uluna_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            uluna_rate = self.ALL_rates['LUNA']['price']
+            uluna_rate = Terra().ALL_rates['LUNA']['price']
         else:
-            uluna_rate = float(int(str(self.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))/1e6)
+            uluna_rate = float(int(str(Terra().terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))/1e6)
 
         return uluna_rate
 
@@ -146,7 +73,7 @@ class Queries:
                 "asset": "uluna"
             }
         }
-        query_result = self.terra.wasm.contract_query(self.Collateral_Oracle, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().Collateral_Oracle, query)
 
         get_luna_col_multiplier = float(query_result['multiplier'])
 
@@ -154,14 +81,14 @@ class Queries:
 
 
     def get_latest_block(self):
-        result = self.terra.tendermint.block_info()
+        result = Terra().terra.tendermint.block_info()
         height = result['block']['header']['height']
         return int(height)
 
 
     def get_native_balance(self, denom):
         native_balance = 0
-        balance_native = self.terra.bank.balance(address=self.account_address)
+        balance_native = Terra().terra.bank.balance(address=Terra().account_address)
         try:
             native_balance = str(balance_native[denom]).replace(denom, '')
         except:
@@ -174,10 +101,10 @@ class Queries:
 
         query = {
             "balance": {
-                "address": self.account_address
+                "address": Terra().account_address
             },
         }
-        query_result = self.terra.wasm.contract_query(self.aTerra, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().aTerra, query)
         balance = query_result['balance']
 
         return float(int(balance)/1e6)
@@ -195,7 +122,7 @@ class Queries:
                 "asset": mAsset
             },
         }
-        position_ids_result = self.terra.wasm.contract_query(self.Collateral_Oracle, query_oracle_price)
+        position_ids_result = Terra().terra.wasm.contract_query(Terra().Collateral_Oracle, query_oracle_price)
 
         # Minimal collateral ratio
         # mBABA
@@ -206,7 +133,7 @@ class Queries:
                 "asset_token": mAsset
             },
         }
-        min_col_ratio_result = self.terra.wasm.contract_query(self.Mint, query_oracle_price)
+        min_col_ratio_result = Terra().terra.wasm.contract_query(Terra().Mint, query_oracle_price)
 
         oracle_price_and_min_col_ratio = [
             position_ids_result['rate'], min_col_ratio_result['min_collateral_ratio']]
@@ -224,10 +151,10 @@ class Queries:
         Mirror_position_info = []
         query_position_ids = {
             "positions": {
-                "owner_addr": self.account_address
+                "owner_addr": Terra().account_address
             },
         }
-        position_ids_result = self.terra.wasm.contract_query(self.Mint, query_position_ids)
+        position_ids_result = Terra().terra.wasm.contract_query(Terra().Mint, query_position_ids)
 
         for position in position_ids_result['positions']:
 
@@ -238,7 +165,7 @@ class Queries:
                 collateral_token_denom = position['collateral']['info']['native_token']['denom']
             except:
                 # for aUST = terra1hzh9vpxhsk8253se0vv5jj6etdvxu3nv8z07zu/terra1ajt556dpzvjwl0kl5tzku3fc3p3knkg9mkv8jl
-                if position['collateral']['info']['token']['contract_addr'] == self.aTerra:
+                if position['collateral']['info']['token']['contract_addr'] == Terra().aTerra:
                     collateral_token_denom = 'aUST'
 
             # This value is returned from the blockchain in-kind.
@@ -256,9 +183,9 @@ class Queries:
             mAsset_address = position['asset']['info']['token']['contract_addr']
 
             try:
-                mAsset_symbol = self.rev_Contract_addresses[mAsset_address]
+                mAsset_symbol = Terra().rev_Contract_addresses[mAsset_address]
             except:
-                mAsset_symbol = 'Not available'
+                mAsset_symbol = 'Not in assets.Contact_addresses.py'
 
             oracle_price_and_min_col_ratio = self.get_oracle_price_and_min_col_ratio(mAsset_address)
             oracle_price = float(oracle_price_and_min_col_ratio[0])
@@ -356,11 +283,11 @@ class Queries:
 
         query = {
             "reward_info": {
-                "staker_addr": self.account_address
+                "staker_addr": Terra().account_address
             },
         }
 
-        query_result = self.terra.wasm.contract_query(self.Staking, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().Staking, query)
 
         # Sum up all claimable rewards for this account_address
         for reward in query_result['reward_infos']:
@@ -372,58 +299,86 @@ class Queries:
     def get_claimable_SPEC(self):
         # Input: -
         # Output: Returns the quantity of SPEC that can be claimed
-        claimable = 0
+        claimable_mirrorFarm = \
+        claimable_anchorFarm = \
+        claimable_specFarm = \
+        claimable_pylonFarm = 0
+
         latest_block = self.get_latest_block()
 
         # Query for the Mirror related claimable SPEC
         query = {
             "reward_info": {
-                "staker_addr": self.account_address,
+                "staker_addr": Terra().account_address,
                 "height": latest_block
             },
         }
-        query_result = self.terra.wasm.contract_query(self.mirrorFarm, query)
+        query_result_mirrorFarm = Terra().terra.wasm.contract_query(Terra().mirrorFarm, query)
+        # print(f'mirrorFarm: {query_result_mirrorFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result['reward_infos']:
-            claimable += int(reward['pending_spec_reward'])
+        for reward in query_result_mirrorFarm['reward_infos']:
+            claimable_mirrorFarm += int(reward['pending_spec_reward'])
 
-        # Query for the Anchor realted claimable SPEC
+        # Query for the Anchor related claimable SPEC
         query = {
             "reward_info": {
-                "staker_addr": self.account_address,
+                "staker_addr": Terra().account_address,
                 "height": latest_block
             },
         }
-        query_result = self.terra.wasm.contract_query(self.anchorFarm, query)
+        query_result_anchorFarm = Terra().terra.wasm.contract_query(Terra().anchorFarm, query)
+        # print(f'anchorFarm: {query_result_anchorFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result['reward_infos']:
-            claimable += int(reward['pending_spec_reward'])
+        for reward in query_result_anchorFarm['reward_infos']:
+            claimable_anchorFarm += int(reward['pending_spec_reward'])
 
         # Query for the Spec related claimable SPEC
         query = {
             "reward_info": {
-                "staker_addr": self.account_address,
+                "staker_addr": Terra().account_address,
                 "height": latest_block
             },
         }
-        query_result = self.terra.wasm.contract_query(self.specFarm, query)
+        query_result_specFarm = Terra().terra.wasm.contract_query(Terra().specFarm, query)
+        # print(f'specFarm: {query_result_specFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result['reward_infos']:
-            claimable += int(reward['pending_spec_reward'])
+        for reward in query_result_specFarm['reward_infos']:
+            claimable_specFarm += int(reward['pending_spec_reward'])
 
-        # Query for the Pylon realted claimable SPEC
+        # Query for the Pylon related claimable SPEC
         query = {
             "reward_info": {
-                "staker_addr": self.account_address,
+                "staker_addr": Terra().account_address,
                 "height": latest_block
             },
         }
-        query_result = self.terra.wasm.contract_query(self.pylonFarm, query)
+        query_result_pylonFarm = Terra().terra.wasm.contract_query(Terra().pylonFarm, query)
+        # print(f'pylonFarm: {query_result_pylonFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result['reward_infos']:
-            claimable += int(reward['pending_spec_reward'])
+        for reward in query_result_pylonFarm['reward_infos']:
+            claimable_pylonFarm += int(reward['pending_spec_reward'])
 
-        return float(claimable/1e6)
+        # claimable_SPEC_dict = {
+        #     "claimable_mirrorFarm": float(claimable_mirrorFarm/1e6),
+        #     "claimable_anchorFarm": float(claimable_anchorFarm/1e6),
+        #     "claimable_specFarm": float(claimable_specFarm/1e6),
+        #     "claimable_pylonFarm": float(claimable_pylonFarm/1e6),
+        # }
+
+        claimable_SPEC_list = [
+            float((
+            +claimable_mirrorFarm \
+            +claimable_anchorFarm\
+            +claimable_specFarm \
+            +claimable_pylonFarm
+            )/1e6),
+            claimable_mirrorFarm >0,
+            claimable_anchorFarm >0,
+            claimable_specFarm >0,
+            claimable_pylonFarm >0,
+        ]
+
+        return claimable_SPEC_list
 
 
     def get_claimable_ANC(self):
@@ -434,12 +389,12 @@ class Queries:
 
         query = {
             "borrower_info": {
-                "borrower": self.account_address,
+                "borrower": Terra().account_address,
                 "block_height": latest_block
             }
         }
 
-        query_result = self.terra.wasm.contract_query(self.mmMarket, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().mmMarket, query)
 
         claimable = float(query_result['pending_rewards']) / 1e6
 
@@ -462,7 +417,7 @@ class Queries:
             }
 
             try:
-                query_result = self.terra.wasm.contract_query(self.Lock, query)
+                query_result = Terra().terra.wasm.contract_query(Terra().Lock, query)
 
                 locked_amount = float(query_result['locked_amount'])
                 unlock_time = float(query_result['unlock_time'])
@@ -486,13 +441,13 @@ class Queries:
                     "amount": str(int(amount * 1e6)),
                     "info": {
                         "token": {
-                            "contract_addr": self.MIR_token
+                            "contract_addr": Terra().MIR_token
                         }
                     }
                 }
             }
         }
-        query_result = self.terra.wasm.contract_query(self.Terraswap_MIR_UST_Pair, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().Terraswap_MIR_UST_Pair, query)
         MIR_return = float(int(query_result['return_amount'])/1e6)
 
         return MIR_return
@@ -509,13 +464,13 @@ class Queries:
                     "amount": str(int(amount*1e6)),
                     "info": {
                         "token": {
-                            "contract_addr": self.SPEC_token
+                            "contract_addr": Terra().SPEC_token
                         }
                     }
                 }
             }
         }
-        query_result = self.terra.wasm.contract_query(self.Spectrum_SPEC_UST_Pair, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().Spectrum_SPEC_UST_Pair, query)
         SPEC_return = float(int(query_result['return_amount'])/1e6)
 
         return SPEC_return
@@ -530,13 +485,13 @@ class Queries:
                     "amount": str(int(amount*1e6)),
                     "info": {
                         "token": {
-                            "contract_addr": self.ANC_token
+                            "contract_addr": Terra().ANC_token
                         }
                     }
                 }
             }
         }
-        query_result = self.terra.wasm.contract_query(self.Terraswap_ANC_UST_Pair, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().Terraswap_ANC_UST_Pair, query)
         ANC_return = float(int(query_result['return_amount'])/1e6)
 
         return ANC_return
@@ -549,7 +504,7 @@ class Queries:
         query = {
             "whitelist": {},
         }
-        query_result = self.terra.wasm.contract_query(self.mmOverseer, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().mmOverseer, query)
 
         for elem in query_result['elems']:
             max_ltv_ratio[elem['symbol']] = float(elem['max_ltv'])
@@ -565,25 +520,25 @@ class Queries:
 
         query_msg_borrow_limit = {
             "borrow_limit": {
-                "borrower": self.account_address
+                "borrower": Terra().account_address
             },
         }
-        borrow_limit_result = self.terra.wasm.contract_query(self.mmOverseer, query_msg_borrow_limit)
+        borrow_limit_result = Terra().terra.wasm.contract_query(Terra().mmOverseer, query_msg_borrow_limit)
 
         query_msg_collateral = {
             "collaterals": {
-                "borrower": self.account_address
+                "borrower": Terra().account_address
             },
         }
-        query_msg_collateral_result = self.terra.wasm.contract_query(self.mmOverseer, query_msg_collateral)
+        query_msg_collateral_result = Terra().terra.wasm.contract_query(Terra().mmOverseer, query_msg_collateral)
 
         query_msg_loan = {
             "borrower_info": {
-                "borrower": self.account_address,
+                "borrower": Terra().account_address,
                 "block_height": self.get_latest_block()
             },
         }
-        loan_amount_result = self.terra.wasm.contract_query(self.mmMarket, query_msg_loan)
+        loan_amount_result = Terra().terra.wasm.contract_query(Terra().mmMarket, query_msg_loan)
 
         loan_amount = int(loan_amount_result['loan_amount']) / 1e6
 
@@ -591,13 +546,13 @@ class Queries:
         for collateral in query_msg_collateral_result['collaterals']:
             collateral_dict[collateral[0]] = collateral[1]
 
-        if collateral_dict.get(self.bETH_token) is not None:
-            amount_bETH_collateral = float(collateral_dict[self.bETH_token])/1e6
+        if collateral_dict.get(Terra().bETH_token) is not None:
+            amount_bETH_collateral = float(collateral_dict[Terra().bETH_token])/1e6
         else:
             amount_bETH_collateral = 0
 
-        if collateral_dict.get(self.bLuna_token) is not None:
-            amount_bLuna_collateral = float(collateral_dict[self.bLuna_token])/1e6
+        if collateral_dict.get(Terra().bLuna_token) is not None:
+            amount_bLuna_collateral = float(collateral_dict[Terra().bLuna_token])/1e6
         else:
             amount_bLuna_collateral = 0
 
@@ -656,11 +611,11 @@ class Queries:
                 return True
 
         try:
-            status = self.terra.tx.tx_info(tx_hash).code
+            status = Terra().terra.tx.tx_info(tx_hash).code
             if not status:
                 return True
             else:
-                return self.terra.tx.tx_info(tx_hash).rawlog
+                return Terra().terra.tx.tx_info(tx_hash).rawlog
         except:
             return 'Status query of tx failed!'
 
@@ -677,11 +632,11 @@ class Queries:
 
         query = {
             "price": {
-                "base_asset": self.mAAPL_token,
+                "base_asset": Terra().mAAPL_token,
                 "quote_asset":"uusd"
             }
         }
-        query_result = self.terra.wasm.contract_query(self.Oracle, query)
+        query_result = Terra().terra.wasm.contract_query(Terra().Oracle, query)
 
         unix_last_price_update = query_result['last_updated_base']
         unix_now = mktime(datetime.now().timetuple())

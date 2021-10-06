@@ -4,7 +4,7 @@ import B_Config as config
 import requests
 import json
 import os
-from email.mime.text import MIMEText
+# from email.mime.text import MIMEText
 
 class Notifications:
     def slack_webhook(msg):
@@ -61,7 +61,7 @@ class Notifications:
         except Exception:
             pass
 
-    def gmail_notification(message):
+    def gmail_notification(subject, message):
 
         import smtplib
         from email.message import EmailMessage
@@ -71,11 +71,10 @@ class Notifications:
         server.login(config.GMAIL_ACCOUNT, config.GMAIL_APP_PASSWORD)
 
         msg = EmailMessage()
-
+        
         # message = MIMEText(message, "html")
-
         msg.set_content(message)
-        msg['Subject'] = config.EMAIL_SUBJECT
+        msg['Subject'] = subject
         msg['From'] = config.EMAIL_FROM
         msg['To'] = config.EMAIL_TO
         server.send_message(msg)

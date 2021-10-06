@@ -1,15 +1,17 @@
+#!/usr/bin/python3
+
 # Other assets
 import B_Config as config
-import C_Main as main
+from C_Main import keep_safe
 
 # Other imports
-from apscheduler.schedulers.blocking import BlockingScheduler
-from datetime import datetime
+import threading
 
-# https://apscheduler.readthedocs.io/en/stable/userguide.html#code-examples
-scheduler = BlockingScheduler(daemon=True)
-scheduler.add_job(main.keep_safe, 'interval', minutes=config.Run_interval_for_Scheduler)
+# Main thread
+main_thread = threading.Event()
+wait_time_in_seconds = config.Run_interval_for_Scheduler * 60
 
-print(f'{datetime.now():%H:%M:%S} Scheduler started. First interval will start in {config.Run_interval_for_Scheduler:.0f} min.')
-
-scheduler.start()
+if __name__ == "__main__":
+    print(f'[Scheduler] Started. First interval will start in {config.Run_interval_for_Scheduler:.0f} min.')
+    while not main_thread.wait(wait_time_in_seconds):
+        keep_safe()

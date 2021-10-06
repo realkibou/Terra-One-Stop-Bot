@@ -26,6 +26,7 @@ class Contract_addresses:
                 'bLuna': 'terra1kc87mu460fwkqte29rquh4hc20m54fxwtsx7gp',
                 'mAAPL': 'terra1vxtwu4ehgzz77mnfwrntyrmgl64qjs75mpwqaz',
                 'mGOOGL': 'terra1h8arz2k547uvmpxctuwush3jzc8fun4s96qgwt',
+                'mGS': 'terra137drsu8gce5thf6jr5mxlfghw36rpljt3zj73v',
                 'mTSLA': 'terra14y5affaarufk3uscy2vr6pe6w6zqf2wpjzn5sh',
                 'mNFLX': 'terra1jsxngqasf2zynj5kyh0tgq9mj3zksa5gk35j4k',
                 'mQQQ': 'terra1csk6tc7pdmpr782w527hwhez6gfv632tyf72cp',

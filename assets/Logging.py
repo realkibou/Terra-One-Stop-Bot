@@ -1,6 +1,12 @@
 #!/usr/bin/python3
 
+# Other assets
 import B_Config as config
+
+# Other imports
+import os
+import logging.config
+import io
 
 if config.Debug_mode:
     level = 'DEBUG'
@@ -13,8 +19,8 @@ LOGGING_CONFIG = {
     'disable_existing_loggers': True,
     'loggers': {
         'default_logger': {
-            'level': 'DEBUG',
-            'handlers': ['default'],
+            'level': level,
+            'handlers': ['default', 'report'],
             'propagate': False
         },
         'report_logger': {
@@ -56,3 +62,17 @@ LOGGING_CONFIG = {
         },
     },
 }
+
+class Logger:
+    def __init__(self):
+        if not os.path.exists('./logs'):
+            os.makedirs('logs')
+
+        logging.config.dictConfig(LOGGING_CONFIG)
+        self.default_logger = logging.getLogger('default_logger')
+        self.report_logger = logging.getLogger('report_logger')
+
+        self.report_array = io.StringIO()
+        self.report_handler = logging.StreamHandler(self.report_array)
+        self.report_logger.addHandler(self.report_handler)
+        self.default_logger.addHandler(self.report_handler)
