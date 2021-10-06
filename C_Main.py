@@ -526,10 +526,9 @@ def keep_safe():
             default_logger.debug(f'[Status Update] Skipped because disabled by config ({config.Send_me_a_status_update}) or Debug Mode is on ({config.Debug_mode}).')
 
         
-    except:
-        # Todo Exception handling
-        print("An exception just happended")
-        default_logger.warning("An exception just happended")
+    except Exception as err:
+        print(err)
+        default_logger.warning(err)
 
     # Write cooldowns to file
     Cooldown().write_cooldown(cooldowns)

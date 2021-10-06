@@ -10,6 +10,7 @@ import B_Config as config
 # Other imports
 from datetime import datetime
 from time import mktime
+import time
 
 class Queries:
 
@@ -161,12 +162,13 @@ class Queries:
             # There are currently three tokens that can be used as collateral Luna, UST, aUST, so we need to find out which one is used for each position_idx.
             position_idx = position['idx']
             try:
-                # for uluna / uusd
-                collateral_token_denom = position['collateral']['info']['native_token']['denom']
-            except:
                 # for aUST = terra1hzh9vpxhsk8253se0vv5jj6etdvxu3nv8z07zu/terra1ajt556dpzvjwl0kl5tzku3fc3p3knkg9mkv8jl
                 if position['collateral']['info']['token']['contract_addr'] == Terra().aTerra:
                     collateral_token_denom = 'aUST'
+            except:
+                # for uluna / uusd
+                # If this throws an exception it is because your collaterial is not in UST or Luna. Ignore that exception.
+                collateral_token_denom = position['collateral']['info']['native_token']['denom']
 
             # This value is returned from the blockchain in-kind.
             collateral_amount_in_kind = int(position['collateral']['amount']) / 1e6
@@ -417,12 +419,15 @@ class Queries:
             }
 
             try:
+                # Todo: If the LCDResponseError is a Status 500 keep calm and carry on.
+                # Status code 500 means, that there is no unclaimed UST. If so, this exception can be ignored.             
                 query_result = Terra().terra.wasm.contract_query(Terra().Lock, query)
 
                 locked_amount = float(query_result['locked_amount'])
                 unlock_time = float(query_result['unlock_time'])
                 if unlock_time < int(datetime.utcnow().timestamp()):
                     claimable += locked_amount
+                
             except:
                 # If a short position has already been claimed, this query will result in an error. We catch it here.
                 claimable = 0
@@ -610,11 +615,15 @@ class Queries:
             else:
                 return True
 
+        # Since we need to wait a bit for the transaction we add a delay here. That way we make sure that the transaction before had time to go through.
+        time.sleep(1) 
+
         try:
             status = Terra().terra.tx.tx_info(tx_hash).code
             if not status:
                 return True
             else:
+                # If status 404 cannot be found, most likely the gas fee for the transaction before was too low. So it was never executed on Terra.
                 return Terra().terra.tx.tx_info(tx_hash).rawlog
         except:
             return 'Status query of tx failed!'

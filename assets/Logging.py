@@ -53,7 +53,7 @@ LOGGING_CONFIG = {
             'datefmt': '%d-%m-%Y %H:%M:%S'
         },
         'moderate': {
-            'format': '%(asctime)s [%(levelname)s] |%(lineno)s: %(message)s',
+            'format': '%(asctime)s [%(levelname)s] %(module)s|%(lineno)s: %(message)s',
             'datefmt': '%d-%m-%Y %H:%M:%S'
         },
         'detailed': {

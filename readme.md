@@ -86,6 +86,7 @@ If this bot is helpful to you and helps maximize your gainz, feel free to donate
 - Sells, buys, swaps any Luna to deposit it as collateral on Mirror
 - Uses withdrawn aUST or UST from Mirror to repay your Anchor Borrow debt (if you run the One-Stop-Bot often enough of course it will loop and eventually repay that debt.)
 - If you withdraw pool rewards, sell them, claim UST etc. and it is still not enough UST to exceed the `config.Anchor_min_deposit_amount` that UST will just remain in your wallet. They will NOT be "remembered" for the next run of the One-Stop-Bot.
+- The bot currently only supports UST, aUST and Luna as collateral on Mirror.
 
 ## Very important remarks!
 - This bot is quite heavy, so do not run it too short intervals. It currently runs at around 1 min. Depending on your internet connection.
@@ -102,11 +103,13 @@ If this bot is helpful to you and helps maximize your gainz, feel free to donate
 
 ## How to install it
 1. `git clone` this repository
-2. Rename `B_Config.py.sample` to  `B_Config.py`
+2. Rename `B_Config.py.sample` to `B_Config.py`
 3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*
-4. Run  `pip3  install -r A_Requirements.txt`
+4. Run  `pip3 install -r A_Requirements.txt`
 5. Run the One-Stop-Bot with a crontab directly or with the `D_Scheduler.py`
-6. If you think you understood the bot and tested it set `Disable_all_transaction_defs` to False.
+6. Make yourself familiar with the bot by using the TESTNET first (Get free UST/LUNA here: https://faucet.terra.money/) by enabling features step-by-step.
+7. Then use your real wallet on the MAINNET but with `Disable_all_transaction_defs` set to True.
+8. If you feel comfortable set `Disable_all_transaction_defs` to False and let the bot work for you. 
 
 ## Slack Notification Setup
 If you use more Slack, it might be simpler to be notified there using Slack Webhooks.
@@ -122,8 +125,8 @@ If you want to be notified via Telegram, you'd need to get `TELEGRAM_TOKEN` and 
 4. Now, choose whatever username you desire for your bot, ie: `MyCool_bot` 
 5. Done! You should see a "Congratulations" message from BotFather.
 6. Add `MyCool_bot` to a group.
-7. To get your own `chat_id`, simply send a message in the group with your bot and run the following command below: `curl -s  https://api.telegram.org/botACCESSTOKEN/getUpdates` (replace `ACCESSTOKEN` with an actual token you just got from item #5).
-8. With  `access_token` and `chat_id` just feed the `B_Config.py` file.
+7. To get your own `chat_id`, simply send a message in the group with your bot and run the following command below: `curl -s https://api.telegram.org/botACCESSTOKEN/getUpdates` (replace `ACCESSTOKEN` with an actual token you just got from item #5).
+8. With `access_token` and `chat_id` just feed the `B_Config.py` file.
 
 ## Gmail Notification Setup
 To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.

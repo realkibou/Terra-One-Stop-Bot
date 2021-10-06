@@ -58,7 +58,7 @@ class Terra:
         self.mAAPL_token = self.contact_addresses['mAAPL']
 
         self.failed_tx_hash = self.contact_addresses['failed_tx_hash']
-        self.success_tx_hash = self.contact_addresses['success_tx_hash']       
+        self.success_tx_hash = self.contact_addresses['success_tx_hash']
 
         def get_terra_gas_prices():
         # return json with gas prices in all native currencies in a human form - means 0.456 uusd for example
@@ -73,7 +73,7 @@ class Terra:
         self.terra = LCDClient(
             chain_id=self.chain_id,
             url=self.public_node_url,
-            gas_prices=get_terra_gas_prices(),
+            # gas_prices=get_terra_gas_prices(), # Disabled, as this raise an exception since the server dont let you query too often. # Todo query only once per hour.
             gas_adjustment=1.6)
         self.mk = MnemonicKey(mnemonic=config.mnemonic) # Desire wallet via passphrase
         self.wallet = self.terra.wallet(self.mk) # Define what wallet to use

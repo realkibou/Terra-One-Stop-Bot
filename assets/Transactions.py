@@ -10,8 +10,18 @@ from terra_sdk.core.wasm import MsgExecuteContract
 from assets.Terra import Terra
 from assets.Queries import Queries
 import B_Config as config
+from assets.Logging import Logger
 
 class Transaction:
+
+    def __init__(self):
+        self.fee_estimation = Queries().get_fee_estimation()
+        # Todo implement this
+        self.low_fee = str(int(config.Fee_multiplier_for_cheap_transactions * self.fee_estimation)) + "uusd"
+        self.std_fee = str(int(self.fee_estimation)) + "uusd"
+        self.high_fee = str(int(config.Fee_multiplier_for_expensive_transactions * self.fee_estimation)) + "uusd"
+        self.default_logger = Logger().default_logger
+
     # For debugging only
     if config.Disable_all_transaction_defs:
         if config.Return_failed_tx:
@@ -95,8 +105,8 @@ class Transaction:
                     }
                 },
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -143,8 +153,8 @@ class Transaction:
                         }
                     },
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -164,8 +174,8 @@ class Transaction:
             }
             coins=Coins()
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -177,8 +187,8 @@ class Transaction:
             }
             coins = Coins()
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -241,7 +251,8 @@ class Transaction:
                     }
                 ))
             
-            sendtx = Terra().wallet.create_and_sign_tx(send, fee=StdFee(3000000, str(Terra().fee_estimation) + "uusd"))
+            fee = StdFee(3000000, self.std_fee)
+            sendtx = Terra().wallet.create_and_sign_tx(send, fee)
             result = Terra().terra.tx.broadcast(sendtx)
 
             return result.txhash
@@ -255,8 +266,8 @@ class Transaction:
             }
             coins=Coins()
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -274,8 +285,8 @@ class Transaction:
             }
             coins=Coins()
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -293,8 +304,8 @@ class Transaction:
 
             coins=Coins()
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -312,8 +323,8 @@ class Transaction:
 
             coins=Coins()
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -321,7 +332,7 @@ class Transaction:
             amount = int(amount * 1e6)
 
             # Depoit a bit less, to have some UST for tx fees
-            coin = Coin('uusd', amount - Terra().fee_estimation * config.Safety_multiple_on_transaction_fees).to_data()
+            coin = Coin('uusd', amount - self.fee_estimation * config.Safety_multiple_on_transaction_fees).to_data()
             coins = Coins.from_data([coin])
 
             contract=Terra().mmMarket
@@ -329,8 +340,8 @@ class Transaction:
                 "deposit_stable": {}
             },
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.high_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -351,8 +362,8 @@ class Transaction:
             }
             coins = Coins()
 
-            fee = str(Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.low_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
@@ -360,7 +371,7 @@ class Transaction:
             amount = int(amount * 1000000)
 
             # Deduct the fee incl safety so there is still some UST left
-            coin = Coin('uusd', amount - Terra().fee_estimation * config.Safety_multiple_on_transaction_fees).to_data()
+            coin = Coin('uusd', amount - self.fee_estimation * config.Safety_multiple_on_transaction_fees).to_data()
             coins = Coins.from_data([coin])
 
             contract=Terra().mmMarket
@@ -368,14 +379,14 @@ class Transaction:
                 "repay_stable": {}
             }
 
-            fee = str(config.Fee_multiplier_for_expensive_transactions * Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.high_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
 
         def Anchor_borrow_more_UST(self, amount):
 
-            amount = int((amount * 1e6) + Terra().fee_estimation * config.Safety_multiple_on_transaction_fees)
+            amount = int((amount * 1e6) + self.fee_estimation * config.Safety_multiple_on_transaction_fees)
 
             contract=Terra().mmMarket
             execute_msg={
@@ -386,24 +397,28 @@ class Transaction:
             
             coins = Coins()
 
-            fee = str(config.Fee_multiplier_for_expensive_transactions * Terra().fee_estimation) + "uusd"
-            txhash = Terra().execute_transaction(contract, execute_msg, coins, fee)
+            fee = self.high_fee
+            txhash = self.execute_transaction(contract, execute_msg, coins, fee)
             return txhash
 
         def execute_transaction(self, contract, execute_msg, coins, fee):
 
-            message = MsgExecuteContract(
-                sender=Terra().wallet.key.acc_address,
-                contract=contract,
-                execute_msg=execute_msg,
-                coins=coins,
-            )
-
-            transaction = Terra().wallet.create_and_sign_tx(
-                msgs=[message], 
-                fee=StdFee(1000000, fee),
-                memo='One-Stop-Bot'
+            try:
+                message = MsgExecuteContract(
+                    sender=Terra().wallet.key.acc_address,
+                    contract=contract,
+                    execute_msg=execute_msg,
+                    coins=coins,
                 )
 
-            result = Terra().terra.tx.broadcast(transaction)
-            return result.txhash
+                transaction = Terra().wallet.create_and_sign_tx(
+                    msgs=[message], 
+                    fee=StdFee(1000000, fee),
+                    memo='One-Stop-Bot',
+                    )
+
+                result = Terra().terra.tx.broadcast(transaction)
+                return result.txhash
+
+            except Exception as err:
+                self.default_logger.warning(err)
