@@ -30,8 +30,6 @@ import time
 #---------- INITIATE ----------
 #------------------------------
 
-begin_time = time.time()
-
 Transaction_class = Transaction()
 Queries_class = Queries()
 Cooldown_class = Cooldown()
@@ -42,14 +40,18 @@ report_logger = Logger_class.report_logger
 
 report_array = Logger_class.report_array
 
-datetime_now = datetime.now()
-aUST_rate = Queries_class.get_aUST_rate()
-general_estimated_tx_fee = float(Queries_class.get_fee_estimation()/1e6)
+
 
 #-------------------------------
 #---------- MAIN DEF -----------
 #-------------------------------
 def keep_safe():
+    
+    datetime_now = datetime.now()
+    aUST_rate = Queries_class.get_aUST_rate()
+    general_estimated_tx_fee = float(Queries_class.get_fee_estimation()/1e6)
+    begin_time = time.time()
+
     try:
         Mirror_position_info = Queries_class.Mirror_get_position_info()
         Anchor_borrow_info = Queries_class.Anchor_get_borrow_info()
@@ -58,8 +60,6 @@ def keep_safe():
         UST_balance_to_be_deposited_at_Anchor_Earn = 0
         status_update = False
         
-        # # raise Exception(f'YOU NEED TO ACT! Your wallet balance of {current_UST_wallet_balance:.0f} UST is too low to execute any transaction.')
-
         if current_UST_wallet_balance < general_estimated_tx_fee:
             default_logger.warning(f'YOU NEED TO ACT! Your wallet balance of {current_UST_wallet_balance:.0f} UST is too low to execute any transaction.')
             return False

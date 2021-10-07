@@ -2,4 +2,4 @@
 __pycache__/
 logs/
 B_Config.py
-X_*.*
+X*.*

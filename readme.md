@@ -6,7 +6,7 @@ Then, this bot is for you!
 Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra.
 
 ## Thank you!
-If this bot is helpful to you and helps maximize your gainz, feel free to donate a bit to **terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg**. This will also keep the development going and the bot up-to-date. Thank you! :)
+If this bot is helpful to you and helps maximize your gainz, feel free to donate a bit to `terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg`. This will also keep the development going and the bot up-to-date. Thank you! :)
 
 *Special thanks to unl1k3ly as his bot taught me what I needed to know. Thanks Terra, Mirror, Spectrum, Anchor team and the Terra Community!*
 
@@ -105,7 +105,7 @@ If this bot is helpful to you and helps maximize your gainz, feel free to donate
 2. Rename `B_Config.py.sample` to `B_Config.py`
 3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*
 4. Run  `pip3 install -r A_Requirements.txt`
-5. Run the One-Stop-Bot with a crontab directly or with the `D_Scheduler.py`
+5. Run the One-Stop-Bot with a crontab directly or with `python D_Scheduler.py`
 6. Make yourself familiar with the bot by using the TESTNET first (Get free UST/LUNA here: https://faucet.terra.money/) by enabling features step-by-step.
 7. Then use your real wallet on the MAINNET but with `Disable_all_transaction_defs` set to True.
 8. If you feel comfortable set `Disable_all_transaction_defs` to False and let the bot work for you. 
