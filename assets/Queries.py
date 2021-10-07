@@ -10,7 +10,6 @@ import B_Config as config
 # Other imports
 from datetime import datetime
 from time import mktime
-import time
 import requests
 
 Terra_class = Terra()
@@ -630,7 +629,7 @@ class Queries:
                 return True
 
         # Since we need to wait a bit for the transaction we add a delay here. That way we make sure that the transaction before had time to go through.
-        # time.sleep(5)
+        # time.sleep(5) # Todo "if code fails, get the response from the broadcast"
 
         try:
             status = Terra_class.terra.tx.tx_info(tx_hash).code

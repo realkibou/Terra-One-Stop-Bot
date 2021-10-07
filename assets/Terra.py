@@ -11,21 +11,20 @@ from assets.Contact_addresses import Contract_addresses
 import B_Config as config
 import requests
 
-def get_terra_gas_prices():
-    # return json with gas prices in all native currencies in a human form - means 0.456 uusd for example
+def get_terra_gas_prices(retry=0):
+   
+    if retry > 2:
+        raise Exception(f'Maximum retries on fetching gas prices from https://fcd.terra.dev/v1/txs/gas_prices reached.')
+
     try:
         r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
         r.raise_for_status()
         if r.status_code == 200:
             return r.json()
     except:
-        try:
-            r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
-            r.raise_for_status()
-            if r.status_code == 200:
-                return r.json()
-        except:
-            raise
+        retry = retry + 1
+        print(retry)
+        return get_terra_gas_prices(retry)
  
 terra_gas_prices = get_terra_gas_prices()
 
