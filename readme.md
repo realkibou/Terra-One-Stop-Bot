@@ -78,7 +78,6 @@ If this bot is helpful to you and helps maximize your gainz, feel free to donate
     * `Logging_detail` Define what level of detail each log shall show
 11. Other stuff
     * `Safety_multiple_on_transaction_fees` Safety multiple on transaction fees
-    * `Fee_multiplier_for_expensive_transactions` Some transactions are more expensive than others. Anchor for example. This is adjusted here.
 
 ## What the One-Stop-Bot does NOT do:
 - Withdraws any UST from Anchor Borrow to deposit that new UST collateral on Mirror
@@ -137,8 +136,6 @@ To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
-- Bundle of queries as this One-Stop-Bot is spamming queries like crazy
-- Bundle transactions (for example Swaps) to save fees
 - HTML Status Report (function is there, just not formatted properly)
 - Run Mirror withdrawals before repay of Anchor Borrow to make use of that available aUST
 - Build a front end

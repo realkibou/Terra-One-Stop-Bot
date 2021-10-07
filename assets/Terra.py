@@ -11,15 +11,25 @@ from assets.Contact_addresses import Contract_addresses
 import B_Config as config
 import requests
 
+def get_terra_gas_prices():
+    # return json with gas prices in all native currencies in a human form - means 0.456 uusd for example
+    try:
+        r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
+        r.raise_for_status()
+        if r.status_code == 200:
+            return r.json()
+    except requests.exceptions.HTTPError as err:
+        print(f"Could not fetch get_terra_gas_prices from Terra's FCD. Error message: {err}")
+ 
+terra_gas_prices = get_terra_gas_prices()
 
 # https://terra-money.github.io/terra-sdk-python/core_modules/wasm.html
 class Terra:
     def __init__(self):
-
         if config.NETWORK == 'MAINNET':
             self.chain_id = 'columbus-5'
             self.public_node_url = 'https://lcd.terra.dev'
-            self.tx_look_up = f'https://finder.terra.money/{self.chain_id}/tx/'            
+            self.tx_look_up = f'https://finder.terra.money/{self.chain_id}/tx/'
             self.contact_addresses = Contract_addresses.contact_addresses(network='MAINNET')
             self.rev_Contract_addresses = Contract_addresses.rev_contact_addresses(self.contact_addresses)
 
@@ -60,24 +70,11 @@ class Terra:
         self.failed_tx_hash = self.contact_addresses['failed_tx_hash']
         self.success_tx_hash = self.contact_addresses['success_tx_hash']
 
-        def get_terra_gas_prices():
-        # return json with gas prices in all native currencies in a human form - means 0.456 uusd for example
-            try:
-                r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
-                r.raise_for_status()
-                if r.status_code == 200:
-                    return r.json()
-            except requests.exceptions.HTTPError as err:
-                print(f"Could not fetch get_terra_gas_prices from Terra's FCD. Error message: {err}")
-
         self.terra = LCDClient(
             chain_id=self.chain_id,
             url=self.public_node_url,
-            # gas_prices=get_terra_gas_prices(), # Disabled, as this raise an exception since the server dont let you query too often. # Todo query only once per hour.
+            gas_prices=terra_gas_prices['uusd']+"uusd",
             gas_adjustment=1.6)
         self.mk = MnemonicKey(mnemonic=config.mnemonic) # Desire wallet via passphrase
         self.wallet = self.terra.wallet(self.mk) # Define what wallet to use
         self.account_address = self.wallet.key.acc_address # Account Add
-        
-        ALL_rates = requests.get('https://api.extraterrestrial.money/v1/api/prices').json()
-        self.ALL_rates = {**ALL_rates.pop('prices'), **ALL_rates}

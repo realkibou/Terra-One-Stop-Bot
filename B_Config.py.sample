@@ -92,7 +92,6 @@ Status_update_time = '9:00' # Time to send you the status_update based on server
 # OTHER
 Run_interval_for_Scheduler = 5 # in minutes. 5 means every 5 minutes
 Safety_multiple_on_transaction_fees = 1 # Transaction fees may fluctuate. Also several transactions may be executed in a row. This multiple gives you a margin of safety.
-Fee_multiplier_for_expensive_transactions = 1.6 # Some transactions are more expensive than others. Anchor for example.
 
 # DEBUGGING
 Debug_mode = False  # If False, default.log will include almost everything. If False only WARNINGs and ERRORs will be logged.

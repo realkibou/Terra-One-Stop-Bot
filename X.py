@@ -1,8 +1,14 @@
 from assets.Queries import Queries
+from assets.Terra import Terra
 import B_Config as config
+from assets.Transactions import Transaction
 
+# Terra SDK
+from terra_sdk.core.coins import Coins
+from terra_sdk.core.coins import Coin
+from terra_sdk.core.auth import StdFee
+from terra_sdk.core.wasm import MsgExecuteContract
 
-fee_estimation = Queries().get_fee_estimation()
-print(fee_estimation)
+account_address = Terra().account_address
 
-print(str(int(config.Fee_multiplier_for_expensive_transactions * fee_estimation)) + "uusd")
+print(Transaction().Anchor_deposit_UST_for_Earn(10))

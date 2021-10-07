@@ -32,24 +32,29 @@ import time
 
 begin_time = time.time()
 
-default_logger = Logger().default_logger
-report_logger = Logger().report_logger
+Transaction_class = Transaction()
+Queries_class = Queries()
+Cooldown_class = Cooldown()
+Logger_class = Logger()
 
-report_array = Logger().report_array
+default_logger = Logger_class.default_logger
+report_logger = Logger_class.report_logger
+
+report_array = Logger_class.report_array
 
 datetime_now = datetime.now()
-aUST_rate = Queries().get_aUST_rate()
-general_estimated_tx_fee = float(Queries().get_fee_estimation()/1e6)
+aUST_rate = Queries_class.get_aUST_rate()
+general_estimated_tx_fee = float(Queries_class.get_fee_estimation()/1e6)
 
 #-------------------------------
 #---------- MAIN DEF -----------
 #-------------------------------
 def keep_safe():
     try:
-        Mirror_position_info = Queries().Mirror_get_position_info()
-        Anchor_borrow_info = Queries().Anchor_get_borrow_info()
-        cooldowns = Cooldown().read_cooldown()
-        current_UST_wallet_balance = Queries().get_native_balance('uusd') # is return in humen decimals
+        Mirror_position_info = Queries_class.Mirror_get_position_info()
+        Anchor_borrow_info = Queries_class.Anchor_get_borrow_info()
+        cooldowns = Cooldown_class.read_cooldown()
+        current_UST_wallet_balance = Queries_class.get_native_balance('uusd') # is return in humen decimals
         UST_balance_to_be_deposited_at_Anchor_Earn = 0
         status_update = False
         
@@ -67,18 +72,18 @@ def keep_safe():
 
         if config.MIR_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
-            claimable_MIR = Queries().get_claimable_MIR()
-            value_of_MIR_claim = Queries().simulate_MIR_Swap(claimable_MIR)
+            claimable_MIR = Queries_class.get_claimable_MIR()
+            value_of_MIR_claim = Queries_class.simulate_MIR_Swap(claimable_MIR)
             # ! Balance will not be checked again, if enough UST are available for tx fees
             if value_of_MIR_claim >= config.MIR_min_total_value \
                     and (value_of_MIR_claim/claimable_MIR) >= config.MIR_min_price:
-                claim_MIR_tx = Transaction().claim_MIR()
-                claim_MIR_tx_status = Queries().get_status_of_tx(claim_MIR_tx)
+                claim_MIR_tx = Transaction_class.claim_MIR()
+                claim_MIR_tx_status = Queries_class.get_status_of_tx(claim_MIR_tx)
 
                 if claim_MIR_tx_status == True:
                     default_logger.debug(f'[MIR Claim] Success TX: {claim_MIR_tx}')
-                    sell_MIR_tx = Transaction().sell_MIR(claimable_MIR)
-                    sell_MIR_tx_status = Queries().get_status_of_tx(sell_MIR_tx)
+                    sell_MIR_tx = Transaction_class.sell_MIR(claimable_MIR)
+                    sell_MIR_tx_status = Queries_class.get_status_of_tx(sell_MIR_tx)
                     if sell_MIR_tx_status == True:
                         default_logger.debug(f'[MIR Sell] Success TX: {sell_MIR_tx}')
                         report_logger.info(
@@ -94,7 +99,7 @@ def keep_safe():
                                         f'[MIR Claim] Reason: {claim_MIR_tx_status}')
             else:
                 default_logger.debug(
-                    f'[MIR Claim & Sell] Skipped because claimable MIR value ({value_of_MIR_claim:.2f}) below limit ({config.MIR_min_total_value:.0f}) or current MIR price ({Queries().get_MIR_rate():.2f}) below limit ({config.MIR_min_price:.2f}).')
+                    f'[MIR Claim & Sell] Skipped because claimable MIR value ({value_of_MIR_claim:.2f}) below limit ({config.MIR_min_total_value:.0f}) or current MIR price ({Queries_class.get_MIR_rate():.2f}) below limit ({config.MIR_min_price:.2f}).')
         else:
             default_logger.debug(
                 f'[MIR Claim & Sell] Skipped because disabled by config ({config.MIR_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
@@ -102,35 +107,35 @@ def keep_safe():
         # Spectrum: Claim & sell SPEC
         if config.SPEC_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
-            claimable_SPEC_list = Queries().get_claimable_SPEC()
+            claimable_SPEC_list = Queries_class.get_claimable_SPEC()
             claimable_SPEC = claimable_SPEC_list[0]
-            value_of_SPEC_claim = Queries().simulate_SPEC_Swap(claimable_SPEC)
+            value_of_SPEC_claim = Queries_class.simulate_SPEC_Swap(claimable_SPEC)
             # ! Balance will not be checked again, if enough UST are available for tx fees
             if value_of_SPEC_claim >= config.SPEC_min_total_value \
                     and (value_of_SPEC_claim/claimable_SPEC) >= config.SPEC_min_price:
-                claim_SPEC_tx = Transaction().claim_SPEC(claimable_SPEC_list)
-                claim_SPEC_tx_status = Queries().get_status_of_tx(claim_SPEC_tx)
+                claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
+                claim_SPEC_tx_status = Queries_class.get_status_of_tx(claim_SPEC_tx)
 
                 if claim_SPEC_tx_status == True:
-                    default_logger.debug(f'[MIR Claim] Success TX: {claim_SPEC_tx}')
-                    sell_SPEC_tx = Transaction().sell_SPEC(claimable_SPEC)
-                    sell_SPEC_tx_status = Queries().get_status_of_tx(sell_SPEC_tx)
+                    default_logger.debug(f'[SPEc Claim] Success TX: {claim_SPEC_tx}')
+                    sell_SPEC_tx = Transaction_class.sell_SPEC(claimable_SPEC)
+                    sell_SPEC_tx_status = Queries_class.get_status_of_tx(sell_SPEC_tx)
                     if sell_SPEC_tx_status == True:
-                        default_logger.debug(f'[MIR Sell] Success TX: {sell_SPEC_tx}')
+                        default_logger.debug(f'[SPEC Sell] Success TX: {sell_SPEC_tx}')
                         report_logger.info(
                             f'[SPEC Claim & Sell] {claimable_SPEC:.2f} SPEC have been claimed and sold for {value_of_SPEC_claim:.2f} UST total.')
                         UST_balance_to_be_deposited_at_Anchor_Earn += value_of_SPEC_claim
                         default_logger.debug(
                             f'[SPEC Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
                     else:
-                        default_logger.warning(f'[MIR Sell] Failed TX: {sell_SPEC_tx}.\n'
-                                            f'[MIR Sell] Reason: {sell_SPEC_tx_status}')
+                        default_logger.warning(f'[SPEC Sell] Failed TX: {sell_SPEC_tx}.\n'
+                                            f'[SPEC Sell] Reason: {sell_SPEC_tx_status}')
                 else:
-                    default_logger.warning(f'[MIR Claim] Failed TX: {claim_SPEC_tx}.\n'
-                                        f'[MIR Claim] Reason: {claim_SPEC_tx_status}')
+                    default_logger.warning(f'[SPEC Claim] Failed TX: {claim_SPEC_tx}.\n'
+                                        f'[SPEC Claim] Reason: {claim_SPEC_tx_status}')
             else:
                 default_logger.debug(
-                    f'[SPEC Claim & Sell] Skipped because claimable SPEC value ({value_of_SPEC_claim:.2f}) below limit ({config.SPEC_min_total_value:.0f}) or current SPEC price ({Queries().get_SPEC_rate():.2f}) below limit ({config.SPEC_min_price:.2f}).')
+                    f'[SPEC Claim & Sell] Skipped because claimable SPEC value ({value_of_SPEC_claim:.2f}) below limit ({config.SPEC_min_total_value:.0f}) or current SPEC price ({Queries_class.get_SPEC_rate():.2f}) below limit ({config.SPEC_min_price:.2f}).')
         else:
             default_logger.debug(
                 f'[SPEC Claim & Sell] Skipped because disabled by config ({config.SPEC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
@@ -138,18 +143,18 @@ def keep_safe():
         # Anchor: Claim & sell ANC
         if config.ANC_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
-            claimable_ANC = Queries().get_claimable_ANC()
-            value_of_ANC_claim = Queries().simulate_ANC_Swap(claimable_ANC)
+            claimable_ANC = Queries_class.get_claimable_ANC()
+            value_of_ANC_claim = Queries_class.simulate_ANC_Swap(claimable_ANC)
             # ! Balance will not be checked again, if enough UST are available for tx fees
             if value_of_ANC_claim >= config.ANC_min_total_value \
                     and (value_of_ANC_claim/claimable_ANC) >= config.ANC_min_price:
-                claim_ANC_tx = Transaction().claim_ANC()
-                claim_ANC_tx_status = Queries().get_status_of_tx(claim_ANC_tx)
+                claim_ANC_tx = Transaction_class.claim_ANC()
+                claim_ANC_tx_status = Queries_class.get_status_of_tx(claim_ANC_tx)
 
                 if claim_ANC_tx_status == True:
                     default_logger.debug(f'[ANC Claim] Success TX: {claim_ANC_tx}')
-                    sell_ANC_tx = Transaction().sell_ANC(claimable_ANC)
-                    sell_ANC_tx_status = Queries().get_status_of_tx(sell_ANC_tx)
+                    sell_ANC_tx = Transaction_class.sell_ANC(claimable_ANC)
+                    sell_ANC_tx_status = Queries_class.get_status_of_tx(sell_ANC_tx)
                     if sell_ANC_tx_status == True:
                         default_logger.debug(f'[ANC Sell] Success TX: {sell_ANC_tx}')
                         report_logger.info(
@@ -165,7 +170,7 @@ def keep_safe():
                                         f'[ANC Claim] Reason: {claim_ANC_tx_status}')
             else:
                 default_logger.debug(
-                    f'[ANC Claim & Sell] Skipped because claimable ANC value ({value_of_ANC_claim:.2f}) below limit ({config.ANC_min_total_value:.0f}) or current ANC price ({Queries().get_ANC_rate():.2f}) below limit ({config.ANC_min_price:.2f}).')
+                    f'[ANC Claim & Sell] Skipped because claimable ANC value ({value_of_ANC_claim:.2f}) below limit ({config.ANC_min_total_value:.0f}) or current ANC price ({Queries_class.get_ANC_rate():.2f}) below limit ({config.ANC_min_price:.2f}).')
         else:
             default_logger.debug(
                 f'[ANC Claim & Sell] Skipped because disabled by config ({config.ANC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
@@ -173,16 +178,16 @@ def keep_safe():
         # Mirror: Claim un-locked UST
         if config.Mirror_claim_unlocked_UST \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
-            claimable_UST = Queries().Mirror_get_claimable_UST(Mirror_position_info)
+            claimable_UST = Queries_class.Mirror_get_claimable_UST(Mirror_position_info)
             # ! Balance will not be checked again, if enough UST are available for tx fees
             if claimable_UST > config.Mirror_min_amount_UST_to_claim:
-                Mirror_claim_unlocked_UST_tx = Transaction().Mirror_claim_unlocked_UST(
+                Mirror_claim_unlocked_UST_tx = Transaction_class.Mirror_claim_unlocked_UST(
                     Mirror_position_info)
-                Mirror_claim_unlocked_UST_tx_status = Queries().get_status_of_tx(
+                Mirror_claim_unlocked_UST_tx_status = Queries_class.get_status_of_tx(
                     Mirror_claim_unlocked_UST_tx)
                 if Mirror_claim_unlocked_UST_tx_status == True:
                     default_logger.debug(
-                        f'Success TX: {Mirror_claim_unlocked_UST_tx}')
+                        f'[Mirror Claim UST] Success TX: {Mirror_claim_unlocked_UST_tx}')
                     report_logger.info(
                         f'[Mirror Claim UST] {claimable_UST:.2f} UST have been claimed from your shorts on Mirror.')
                     UST_balance_to_be_deposited_at_Anchor_Earn += claimable_UST
@@ -209,8 +214,8 @@ def keep_safe():
         Anchor_action_to_be_executed = Anchor_borrow_info['action_to_be_executed']
 
         # Update the wallet's balance, in case some token have been sold for UST
-        current_UST_wallet_balance = Queries().get_native_balance('uusd')
-        current_aUST_wallet_balance = Queries().get_aUST_balance()
+        current_UST_wallet_balance = Queries_class.get_native_balance('uusd')
+        current_aUST_wallet_balance = Queries_class.get_aUST_balance()
 
         if Anchor_action_to_be_executed == 'none':
             default_logger.debug(f'[Anchor] Current LTV at {(Anchor_borrow_info["cur_col_ratio"]*100):.0f} %.')
@@ -220,9 +225,9 @@ def keep_safe():
 
             # Check if the wallet has enough UST to repay and for tx fees
             if Anchor_amount_to_execute_in_ust < (current_UST_wallet_balance - general_estimated_tx_fee):
-                Anchor_repay_debt_UST_tx = Transaction().Anchor_repay_debt_UST(
+                Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(
                     Anchor_amount_to_execute_in_ust)
-                Anchor_repay_debt_UST_tx_status = Queries().get_status_of_tx(
+                Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
                     Anchor_repay_debt_UST_tx)
                 if Anchor_repay_debt_UST_tx_status == True:
                     default_logger.debug(
@@ -239,17 +244,17 @@ def keep_safe():
 
                 Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - \
                     current_UST_wallet_balance + general_estimated_tx_fee
-                Anchor_withdraw_UST_from_Earn_tx = Transaction().Anchor_withdraw_UST_from_Earn(
+                Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(
                     Amount_to_be_withdrawn, 'UST')
-                Anchor_withdraw_UST_from_Earn_tx_status = Queries().get_status_of_tx(
+                Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(
                     Anchor_withdraw_UST_from_Earn_tx)
 
                 if Anchor_withdraw_UST_from_Earn_tx_status == True:
                     default_logger.debug(
                         f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
-                    Anchor_repay_debt_UST_tx = Transaction().Anchor_repay_debt_UST(
+                    Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(
                         Anchor_amount_to_execute_in_ust)
-                    Anchor_repay_debt_UST_tx_status = Queries().get_status_of_tx(
+                    Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
                         Anchor_repay_debt_UST_tx)
                     if Anchor_repay_debt_UST_tx_status == True:
                         default_logger.debug(f'[Anchor Withdraw] Success TX: {Anchor_repay_debt_UST_tx}')
@@ -265,17 +270,17 @@ def keep_safe():
             elif config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet \
                     and current_UST_wallet_balance > general_estimated_tx_fee:
 
-                Anchor_withdraw_UST_from_Earn_tx = Transaction().Anchor_withdraw_UST_from_Earn(
+                Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(
                     current_aUST_wallet_balance, 'aUST')
-                Anchor_withdraw_UST_from_Earn_tx_status = Queries().get_status_of_tx(
+                Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(
                     Anchor_withdraw_UST_from_Earn_tx)
 
                 if Anchor_withdraw_UST_from_Earn_tx_status == True:
                     default_logger.debug(
                         f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
 
-                    Anchor_repay_debt_UST_tx = Transaction().Anchor_repay_debt_UST(Queries().get_native_balance('uusd') - general_estimated_tx_fee)
-                    Anchor_repay_debt_UST_tx_status = Queries().get_status_of_tx(
+                    Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(Queries_class.get_native_balance('uusd') - general_estimated_tx_fee)
+                    Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
                         Anchor_repay_debt_UST_tx)
 
                     if Anchor_repay_debt_UST_tx_status == True:
@@ -305,9 +310,9 @@ def keep_safe():
             # Check if we are in a cooldown period or if the key actually exists
             if cooldowns.get('Anchor_borrow_cooldown') is None or cooldowns['Anchor_borrow_cooldown'] <= datetime_now:
 
-                Anchor_borrow_more_UST_tx = Transaction().Anchor_borrow_more_UST(
+                Anchor_borrow_more_UST_tx = Transaction_class.Anchor_borrow_more_UST(
                     Anchor_amount_to_execute_in_ust)
-                Anchor_borrow_more_UST_tx_status = Queries().get_status_of_tx(
+                Anchor_borrow_more_UST_tx_status = Queries_class.get_status_of_tx(
                     Anchor_borrow_more_UST_tx)
 
                 if Anchor_borrow_more_UST_tx_status == True:
@@ -341,10 +346,8 @@ def keep_safe():
         if config.Anchor_enable_deposit_borrowed_UST \
                 and UST_balance_to_be_deposited_at_Anchor_Earn >= config.Anchor_min_deposit_amount:
 
-            Anchor_deposit_UST_for_Earn_tx = Transaction().Anchor_deposit_UST_for_Earn(
-                UST_balance_to_be_deposited_at_Anchor_Earn)
-            Anchor_deposit_UST_for_Earn_tx_status = Queries().get_status_of_tx(
-                Anchor_deposit_UST_for_Earn_tx)
+            Anchor_deposit_UST_for_Earn_tx = Transaction_class.Anchor_deposit_UST_for_Earn(UST_balance_to_be_deposited_at_Anchor_Earn)
+            Anchor_deposit_UST_for_Earn_tx_status = Queries_class.get_status_of_tx(Anchor_deposit_UST_for_Earn_tx)
 
             if Anchor_deposit_UST_for_Earn_tx_status == True:
                 default_logger.debug(
@@ -371,7 +374,7 @@ def keep_safe():
             amount_to_execute_in_ust = position["amount_to_execute_in_ust"]
             amount_to_execute_in_kind = position['amount_to_execute_in_kind']
             collateral_token_denom = position['collateral_token_denom']
-            within_market_hours = Queries().market_hours()
+            within_market_hours = Queries_class.market_hours()
             # Check if position is marked for a withdraw
             if action_to_be_executed == 'withdraw':
                 if within_market_hours:
@@ -380,9 +383,9 @@ def keep_safe():
                         # Check if we are in a cooldown period or if the key actually exists
                         if cooldowns.get(position_idx) is None or cooldowns[position_idx] <= datetime_now:
 
-                            Mirror_withdraw_collateral_for_position_tx = Transaction().Mirror_withdraw_collateral_for_position(
+                            Mirror_withdraw_collateral_for_position_tx = Transaction_class.Mirror_withdraw_collateral_for_position(
                                 position_idx, amount_to_execute_in_kind, collateral_token_denom)
-                            Mirror_withdraw_collateral_for_position_tx_status = Queries().get_status_of_tx(
+                            Mirror_withdraw_collateral_for_position_tx_status = Queries_class.get_status_of_tx(
                                 Mirror_withdraw_collateral_for_position_tx)
 
                             if Mirror_withdraw_collateral_for_position_tx_status == True:
@@ -417,12 +420,12 @@ def keep_safe():
 
                     # Depending on the collateral token required, check if enough balance of the in-kind token is in your wallet
                     # and enough UST for the transaction fee
-                    current_UST_wallet_balance = Queries().get_native_balance('uusd')
+                    current_UST_wallet_balance = Queries_class.get_native_balance('uusd')
                     if collateral_token_denom == 'aUST':
-                        available_balance = Queries().get_aUST_balance()
+                        available_balance = Queries_class.get_aUST_balance()
                         enough_balance = available_balance >= amount_to_execute_in_kind and current_UST_wallet_balance > general_estimated_tx_fee
                     elif collateral_token_denom == 'uluna':
-                        available_balance = Queries().get_native_balance(
+                        available_balance = Queries_class.get_native_balance(
                             collateral_token_denom)
                         enough_balance = available_balance >= amount_to_execute_in_kind and current_UST_wallet_balance > general_estimated_tx_fee
                     elif collateral_token_denom == 'uusd':
@@ -434,9 +437,9 @@ def keep_safe():
                 
                     if enough_balance:
                         # If you have enough balance then deposit collateral
-                        Mirror_deposit_collateral_for_position_tx = Transaction().Mirror_deposit_collateral_for_position(
+                        Mirror_deposit_collateral_for_position_tx = Transaction_class.Mirror_deposit_collateral_for_position(
                             position_idx, amount_to_execute_in_kind, collateral_token_denom)
-                        Mirror_deposit_collateral_for_position_tx_status = Queries().get_status_of_tx(Mirror_deposit_collateral_for_position_tx)
+                        Mirror_deposit_collateral_for_position_tx_status = Queries_class.get_status_of_tx(Mirror_deposit_collateral_for_position_tx)
 
                         if Mirror_deposit_collateral_for_position_tx_status == True:
                             default_logger.debug(
@@ -448,9 +451,9 @@ def keep_safe():
                                                 f'[Mirror Shorts Deposit] Reason: {Mirror_deposit_collateral_for_position_tx_status}')
                     else:
                         # If you have NOT enough balance then deposit what is possible
-                        Mirror_deposit_collateral_for_position_tx = Transaction().Mirror_deposit_collateral_for_position(
+                        Mirror_deposit_collateral_for_position_tx = Transaction_class.Mirror_deposit_collateral_for_position(
                             position_idx, available_balance, collateral_token_denom)
-                        Mirror_deposit_collateral_for_position_tx_status = Queries().get_status_of_tx(
+                        Mirror_deposit_collateral_for_position_tx_status = Queries_class.get_status_of_tx(
                             Mirror_deposit_collateral_for_position_tx)
 
                         if Mirror_deposit_collateral_for_position_tx_status == True:
@@ -531,7 +534,7 @@ def keep_safe():
         default_logger.warning(err)
 
     # Write cooldowns to file
-    Cooldown().write_cooldown(cooldowns)
+    Cooldown_class.write_cooldown(cooldowns)
     
     # Write all from current report_logger to array
     report_content = report_array.getvalue()
