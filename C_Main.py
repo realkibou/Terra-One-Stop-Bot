@@ -37,9 +37,7 @@ Logger_class = Logger()
 
 default_logger = Logger_class.default_logger
 report_logger = Logger_class.report_logger
-
 report_array = Logger_class.report_array
-
 
 
 #-------------------------------

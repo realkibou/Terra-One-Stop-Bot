@@ -13,19 +13,20 @@ from time import mktime
 import time
 import requests
 
-def get_all_rates():
-    
-    all_rates = requests.get('https://api.extraterrestrial.money/v1/api/prices').json()
-    all_rates = {**all_rates.pop('prices'), **all_rates}
-
-    return all_rates
-
 Terra_class = Terra()
-all_rates = get_all_rates()
 account_address = Terra_class.account_address
 
-
 class Queries:
+    def __init__(self):
+
+        self.all_rates = self.get_all_rates()
+
+    def get_all_rates(self):
+    
+        all_rates = requests.get('https://api.extraterrestrial.money/v1/api/prices').json()
+        all_rates = {**all_rates.pop('prices'), **all_rates}
+
+        return all_rates
     
     def get_fee_estimation(self):
         estimation = Terra_class.terra.treasury.tax_cap('uusd')
@@ -35,7 +36,7 @@ class Queries:
     def get_ANC_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            SPEC_rate = all_rates['ANC']['price']
+            SPEC_rate = self.all_rates['ANC']['price']
         else:
             SPEC_rate = 1
         return SPEC_rate
@@ -43,7 +44,7 @@ class Queries:
     def get_MIR_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            MIR_rate = all_rates['MIR']['price']
+            MIR_rate = self.all_rates['MIR']['price']
         else:
             MIR_rate = 1
         return MIR_rate
@@ -51,7 +52,7 @@ class Queries:
     def get_SPEC_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            SPEC_rate = all_rates['SPEC']['price']
+            SPEC_rate = self.all_rates['SPEC']['price']
         else:
             SPEC_rate = 1
         return SPEC_rate
@@ -59,7 +60,7 @@ class Queries:
     def get_aUST_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            aUST_rate = all_rates['aUST']['price']
+            aUST_rate = self.all_rates['aUST']['price']
         else:
             query = {
                 "epoch_state": {},
@@ -73,7 +74,7 @@ class Queries:
     def get_uluna_rate(self):
 
         if config.NETWORK == 'MAINNET':
-            uluna_rate = all_rates['LUNA']['price']
+            uluna_rate = self.all_rates['LUNA']['price']
         else:
             uluna_rate = float(int(str(Terra_class.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))/1e6)
 
@@ -629,7 +630,7 @@ class Queries:
                 return True
 
         # Since we need to wait a bit for the transaction we add a delay here. That way we make sure that the transaction before had time to go through.
-        time.sleep(5) 
+        # time.sleep(5)
 
         try:
             status = Terra_class.terra.tx.tx_info(tx_hash).code

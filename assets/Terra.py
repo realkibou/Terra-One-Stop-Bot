@@ -18,8 +18,14 @@ def get_terra_gas_prices():
         r.raise_for_status()
         if r.status_code == 200:
             return r.json()
-    except requests.exceptions.HTTPError as err:
-        print(f"Could not fetch get_terra_gas_prices from Terra's FCD. Error message: {err}")
+    except:
+        try:
+            r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
+            r.raise_for_status()
+            if r.status_code == 200:
+                return r.json()
+        except:
+            raise
  
 terra_gas_prices = get_terra_gas_prices()
 
