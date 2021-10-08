@@ -218,130 +218,135 @@ def keep_safe():
         current_UST_wallet_balance = Queries_class.get_native_balance('uusd')
         current_aUST_wallet_balance = Queries_class.get_aUST_balance()
 
-        if Anchor_action_to_be_executed == 'none':
-            default_logger.debug(f'[Anchor] Current LTV at {(Anchor_borrow_info["cur_col_ratio"]*100):.0f} %.')
+        if Anchor_borrow_info['borrow_limit'] > 0:
+            
+            if Anchor_action_to_be_executed == 'none' \
+                and Anchor_borrow_info['borrow_limit'] > 0:
+                default_logger.debug(f'[Anchor] Current LTV at {(Anchor_borrow_info["cur_col_ratio"]*100):.0f} %.')
 
-        if Anchor_action_to_be_executed == 'repay' \
-                and Anchor_amount_to_execute_in_ust > config.Anchor_min_repay_limit:
+            if Anchor_action_to_be_executed == 'repay' \
+                    and Anchor_amount_to_execute_in_ust > config.Anchor_min_repay_limit:
 
-            # Check if the wallet has enough UST to repay and for tx fees
-            if Anchor_amount_to_execute_in_ust < (current_UST_wallet_balance - general_estimated_tx_fee):
-                Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(
-                    Anchor_amount_to_execute_in_ust)
-                Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
-                    Anchor_repay_debt_UST_tx)
-                if Anchor_repay_debt_UST_tx_status == True:
-                    default_logger.debug(
-                        f'[Anchor Repay] Success TX: {Anchor_repay_debt_UST_tx}')
-                    report_logger.info(
-                        f'[Anchor Repay] {Anchor_amount_to_execute_in_ust:.2f} UST have been repaid to Anchor Borrow from your wallet.')
-                else:
-                    default_logger.warning(f'[Anchor Repay] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
-                                        f'[Anchor Repay] Reason: {Anchor_repay_debt_UST_tx_status}')
-
-            # Otherwise check if the balance in the wallet + a withdrawl of UST from Anchor Earn would be enough, and withdraw what is needed
-            elif config.Anchor_enable_withdraw_of_deposited_UST \
-                    and (current_aUST_wallet_balance * aUST_rate + current_UST_wallet_balance - general_estimated_tx_fee) >= Anchor_amount_to_execute_in_ust:
-
-                Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - \
-                    current_UST_wallet_balance + general_estimated_tx_fee
-                Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(
-                    Amount_to_be_withdrawn, 'UST')
-                Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(
-                    Anchor_withdraw_UST_from_Earn_tx)
-
-                if Anchor_withdraw_UST_from_Earn_tx_status == True:
-                    default_logger.debug(
-                        f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
+                # Check if the wallet has enough UST to repay and for tx fees
+                if Anchor_amount_to_execute_in_ust < (current_UST_wallet_balance - general_estimated_tx_fee):
                     Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(
                         Anchor_amount_to_execute_in_ust)
                     Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
                         Anchor_repay_debt_UST_tx)
                     if Anchor_repay_debt_UST_tx_status == True:
-                        default_logger.debug(f'[Anchor Withdraw] Success TX: {Anchor_repay_debt_UST_tx}')
-                        report_logger.info(f'[Anchor Withdraw] {Amount_to_be_withdrawn:.2f} UST have been withdrawn from your Anchor Earn and {Anchor_repay_debt_UST_tx} (incl. UST from your wallet) have been repaid to Anchor Borrow.')
-                    else:
-                        default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
-                                            f'[Anchor Withdraw] Reason: {Anchor_repay_debt_UST_tx_status}')
-                else:
-                    default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
-                                        f'[Anchor Withdraw] Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
-
-            # Otherwise (if allowed) withdraw what is available and repay what is possible if enough tx fees are available
-            elif config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet \
-                    and current_UST_wallet_balance > general_estimated_tx_fee:
-
-                Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(
-                    current_aUST_wallet_balance, 'aUST')
-                Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(
-                    Anchor_withdraw_UST_from_Earn_tx)
-
-                if Anchor_withdraw_UST_from_Earn_tx_status == True:
-                    default_logger.debug(
-                        f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
-
-                    Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(Queries_class.get_native_balance('uusd') - general_estimated_tx_fee)
-                    Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
-                        Anchor_repay_debt_UST_tx)
-
-                    if Anchor_repay_debt_UST_tx_status == True:
                         default_logger.debug(
                             f'[Anchor Repay] Success TX: {Anchor_repay_debt_UST_tx}')
-                        report_logger.warning(f'[Anchor Repay] YOU NEED TO ACT! There was not enough availabe aUST to withdraw and not enough UST in your wallet to repay your Anchor Borrow.\n'
-                                            f'{current_aUST_wallet_balance:.2f} aUST has been withdrawn, and combined with your availabe UST in your wallet, {Anchor_repay_debt_UST_tx:.2f} UST have been repaid to Anchor Borrow.')
+                        report_logger.info(
+                            f'[Anchor Repay] {Anchor_amount_to_execute_in_ust:.2f} UST have been repaid to Anchor Borrow from your wallet.')
                     else:
                         default_logger.warning(f'[Anchor Repay] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
                                             f'[Anchor Repay] Reason: {Anchor_repay_debt_UST_tx_status}')
 
+                # Otherwise check if the balance in the wallet + a withdrawl of UST from Anchor Earn would be enough, and withdraw what is needed
+                elif config.Anchor_enable_withdraw_of_deposited_UST \
+                        and (current_aUST_wallet_balance * aUST_rate + current_UST_wallet_balance - general_estimated_tx_fee) >= Anchor_amount_to_execute_in_ust:
+
+                    Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - \
+                        current_UST_wallet_balance + general_estimated_tx_fee
+                    Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(
+                        Amount_to_be_withdrawn, 'UST')
+                    Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(
+                        Anchor_withdraw_UST_from_Earn_tx)
+
+                    if Anchor_withdraw_UST_from_Earn_tx_status == True:
+                        default_logger.debug(
+                            f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
+                        Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(
+                            Anchor_amount_to_execute_in_ust)
+                        Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
+                            Anchor_repay_debt_UST_tx)
+                        if Anchor_repay_debt_UST_tx_status == True:
+                            default_logger.debug(f'[Anchor Withdraw] Success TX: {Anchor_repay_debt_UST_tx}')
+                            report_logger.info(f'[Anchor Withdraw] {Amount_to_be_withdrawn:.2f} UST have been withdrawn from your Anchor Earn and {Anchor_repay_debt_UST_tx} (incl. UST from your wallet) have been repaid to Anchor Borrow.')
+                        else:
+                            default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
+                                                f'[Anchor Withdraw] Reason: {Anchor_repay_debt_UST_tx_status}')
+                    else:
+                        default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
+                                            f'[Anchor Withdraw] Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
+
+                # Otherwise (if allowed) withdraw what is available and repay what is possible if enough tx fees are available
+                elif config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet \
+                        and current_UST_wallet_balance > general_estimated_tx_fee:
+
+                    Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(
+                        current_aUST_wallet_balance, 'aUST')
+                    Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(
+                        Anchor_withdraw_UST_from_Earn_tx)
+
+                    if Anchor_withdraw_UST_from_Earn_tx_status == True:
+                        default_logger.debug(
+                            f'[Anchor Withdraw] Success TX: {Anchor_withdraw_UST_from_Earn_tx}')
+
+                        Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(Queries_class.get_native_balance('uusd') - general_estimated_tx_fee)
+                        Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(
+                            Anchor_repay_debt_UST_tx)
+
+                        if Anchor_repay_debt_UST_tx_status == True:
+                            default_logger.debug(
+                                f'[Anchor Repay] Success TX: {Anchor_repay_debt_UST_tx}')
+                            report_logger.warning(f'[Anchor Repay] YOU NEED TO ACT! There was not enough availabe aUST to withdraw and not enough UST in your wallet to repay your Anchor Borrow.\n'
+                                                f'{current_aUST_wallet_balance:.2f} aUST has been withdrawn, and combined with your availabe UST in your wallet, {Anchor_repay_debt_UST_tx:.2f} UST have been repaid to Anchor Borrow.')
+                        else:
+                            default_logger.warning(f'[Anchor Repay] Failed TX: {Anchor_repay_debt_UST_tx}.\n'
+                                                f'[Anchor Repay] Reason: {Anchor_repay_debt_UST_tx_status}')
+
+                    else:
+                        default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
+                                            f'[Anchor Withdraw] Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
                 else:
-                    default_logger.warning(f'[Anchor Withdraw] Failed TX: {Anchor_withdraw_UST_from_Earn_tx}.\n'
-                                        f'[Anchor Withdraw] Reason: {Anchor_withdraw_UST_from_Earn_tx_status}')
+                    default_logger.debug(
+                        f'[Anchor Repay] Skipped because disabled by config Anchor_enable_withdraw_of_deposited_UST({config.Anchor_enable_withdraw_of_deposited_UST}) or\nAnchor_enable_partially_repay_if_not_enough_UST_in_wallet ({config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet}).')
+            else:
+                default_logger.debug(f'[Anchor Repay] Skipped because disabled by config ({config.Anchor_enable_auto_repay_of_debt}), nothing to repay ({Anchor_action_to_be_executed}) or repay amount ({Anchor_amount_to_execute_in_ust:.0f}) below repay limit ({config.Anchor_min_repay_limit:.0f}).')
+            
+                    
+            # Anchor: Borrow more UST if possible, allowed, big enough and enough balance for tx fees is available
+            if Anchor_action_to_be_executed == 'borrow' \
+                    and Anchor_amount_to_execute_in_ust > config.Anchor_min_borrow_limit \
+                    and current_UST_wallet_balance > general_estimated_tx_fee:
+
+                # Check if we are in a cooldown period or if the key actually exists
+                if cooldowns.get('Anchor_borrow_cooldown') is None or cooldowns['Anchor_borrow_cooldown'] <= datetime_now:
+
+                    Anchor_borrow_more_UST_tx = Transaction_class.Anchor_borrow_more_UST(
+                        Anchor_amount_to_execute_in_ust)
+                    Anchor_borrow_more_UST_tx_status = Queries_class.get_status_of_tx(
+                        Anchor_borrow_more_UST_tx)
+
+                    if Anchor_borrow_more_UST_tx_status == True:
+                        default_logger.debug(
+                            f'[Anchor Borrow] Success TX: {Anchor_borrow_more_UST_tx}')
+                        report_logger.info(
+                            f'[Anchor Borrow] {Anchor_amount_to_execute_in_ust:.2f} UST more has been borrowed from Anchor Borrow.')
+                        UST_balance_to_be_deposited_at_Anchor_Earn += Anchor_amount_to_execute_in_ust
+                        default_logger.debug(
+                            f'[Anchor Borrow] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
+
+                        # Cooldown: Write date of today into cooldown dictionary
+                        cooldowns['Anchor_borrow_cooldown'] = datetime_now + timedelta(days=config.Anchor_borrow_cooldown)
+                        if config.Anchor_borrow_cooldown > 0:
+                            report_logger.info(
+                                f'[Anchor Borrow] Cooldown limit has been activated. Next Anchor deposit will be possible on {(datetime_now + timedelta(days=config.Anchor_borrow_cooldown)):%Y-%m-%d}.')
+                    else:
+                        default_logger.warning(f'[Anchor Borrow] Failed TX: {Anchor_borrow_more_UST_tx}.\n'
+                                                f'[Anchor Borrow] Reason: {Anchor_borrow_more_UST_tx_status}')
+                else:
+                    try:
+                        default_logger.debug(f'[Anchor Borrow] Skipped because in cooldown period until ({cooldowns["Anchor_borrow_cooldown"]}).')
+                    except:
+                        default_logger.debug(f'[Anchor Borrow] Something is wrong with the cooldowns["Anchor_borrow_cooldown"].')
+
             else:
                 default_logger.debug(
-                    f'[Anchor Repay] Skipped because disabled by config Anchor_enable_withdraw_of_deposited_UST({config.Anchor_enable_withdraw_of_deposited_UST}) or\nAnchor_enable_partially_repay_if_not_enough_UST_in_wallet ({config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet}).')
+                    f'[Anchor Borrow] Skipped because disabled by config ({config.Anchor_enable_auto_borrow_UST}), nothing to borrow ({Anchor_action_to_be_executed}), borrow amount ({Anchor_amount_to_execute_in_ust:.0f}) below repay limit ({config.Anchor_min_borrow_limit:.0f}) or not enough funds for the transaction ({(current_UST_wallet_balance - general_estimated_tx_fee):.0f}).')
         else:
-            default_logger.debug(
-                f'[Anchor Repay] Skipped because disabled by config ({config.Anchor_enable_auto_repay_of_debt}), nothing to repay ({Anchor_action_to_be_executed}) or repay amount ({Anchor_amount_to_execute_in_ust:.0f}) below repay limit ({config.Anchor_min_repay_limit:.0f}).')
-
-        # Anchor: Borrow more UST if possible, allowed, big enough and enough balance for tx fees is available
-        if Anchor_action_to_be_executed == 'borrow' \
-                and Anchor_amount_to_execute_in_ust > config.Anchor_min_borrow_limit \
-                and current_UST_wallet_balance > general_estimated_tx_fee:
-
-            # Check if we are in a cooldown period or if the key actually exists
-            if cooldowns.get('Anchor_borrow_cooldown') is None or cooldowns['Anchor_borrow_cooldown'] <= datetime_now:
-
-                Anchor_borrow_more_UST_tx = Transaction_class.Anchor_borrow_more_UST(
-                    Anchor_amount_to_execute_in_ust)
-                Anchor_borrow_more_UST_tx_status = Queries_class.get_status_of_tx(
-                    Anchor_borrow_more_UST_tx)
-
-                if Anchor_borrow_more_UST_tx_status == True:
-                    default_logger.debug(
-                        f'[Anchor Borrow] Success TX: {Anchor_borrow_more_UST_tx}')
-                    report_logger.info(
-                        f'[Anchor Borrow] {Anchor_amount_to_execute_in_ust:.2f} UST more has been borrowed from Anchor Borrow.')
-                    UST_balance_to_be_deposited_at_Anchor_Earn += Anchor_amount_to_execute_in_ust
-                    default_logger.debug(
-                        f'[Anchor Borrow] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
-
-                    # Cooldown: Write date of today into cooldown dictionary
-                    cooldowns['Anchor_borrow_cooldown'] = datetime_now + timedelta(days=config.Anchor_borrow_cooldown)
-                    if config.Anchor_borrow_cooldown > 0:
-                        report_logger.info(
-                            f'[Anchor Borrow] Cooldown limit has been activated. Next Anchor deposit will be possible on {(datetime_now + timedelta(days=config.Anchor_borrow_cooldown)):%Y-%m-%d}.')
-                else:
-                    default_logger.warning(f'[Anchor Borrow] Failed TX: {Anchor_borrow_more_UST_tx}.\n'
-                                            f'[Anchor Borrow] Reason: {Anchor_borrow_more_UST_tx_status}')
-            else:
-                try:
-                    default_logger.debug(f'[Anchor Borrow] Skipped because in cooldown period until ({cooldowns["Anchor_borrow_cooldown"]}).')
-                except:
-                    default_logger.debug(f'[Anchor Borrow] Something is wrong with the cooldowns["Anchor_borrow_cooldown"].')
-
-        else:
-            default_logger.debug(
-                f'[Anchor Borrow] Skipped because disabled by config ({config.Anchor_enable_auto_borrow_UST}), nothing to borrow ({Anchor_action_to_be_executed}), borrow amount ({Anchor_amount_to_execute_in_ust:.0f}) below repay limit ({config.Anchor_min_borrow_limit:.0f}) or not enough funds for the transaction ({(current_UST_wallet_balance - general_estimated_tx_fee):.0f}).')
+            default_logger.debug(f'[Anchor] You do not have any collateral deposited in Anchor. You borrow limit is 0.')
 
         # Anchor: Deposit UST from previous claim/sale of reward tokens into Anchor to get more aUST
         if config.Anchor_enable_deposit_borrowed_UST \

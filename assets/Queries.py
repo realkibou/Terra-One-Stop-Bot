@@ -544,78 +544,97 @@ class Queries:
         }
         borrow_limit_result = Terra_class.terra.wasm.contract_query(Terra_class.mmOverseer, query_msg_borrow_limit)
 
-        query_msg_collateral = {
-            "collaterals": {
-                "borrower": account_address
-            },
-        }
-        query_msg_collateral_result = Terra_class.terra.wasm.contract_query(Terra_class.mmOverseer, query_msg_collateral)
-
-        query_msg_loan = {
-            "borrower_info": {
-                "borrower": account_address,
-                "block_height": self.get_latest_block()
-            },
-        }
-        loan_amount_result = Terra_class.terra.wasm.contract_query(Terra_class.mmMarket, query_msg_loan)
-
-        loan_amount = int(loan_amount_result['loan_amount']) / 1e6
-
-        collateral_dict = {}
-        for collateral in query_msg_collateral_result['collaterals']:
-            collateral_dict[collateral[0]] = collateral[1]
-
-        if collateral_dict.get(Terra_class.bETH_token) is not None:
-            amount_bETH_collateral = float(collateral_dict[Terra_class.bETH_token])/1e6
-        else:
-            amount_bETH_collateral = 0
-
-        if collateral_dict.get(Terra_class.bLuna_token) is not None:
-            amount_bLuna_collateral = float(collateral_dict[Terra_class.bLuna_token])/1e6
-        else:
-            amount_bLuna_collateral = 0
-
         borrow_limit = int(borrow_limit_result['borrow_limit']) / 1e6
-        total_collateral_value = borrow_limit / max_ltv_ratio
-        cur_col_ratio = loan_amount / borrow_limit * max_ltv_ratio
-        lower_trigger_ratio = max_ltv_ratio + config.Anchor_lower_distance
-        upper_trigger_ratio = max_ltv_ratio + config.Anchor_upper_distance
-        distance_to_max_ltv = cur_col_ratio - max_ltv_ratio
 
-        collateral_loss_to_liq = float(-(loan_amount / max_ltv_ratio / total_collateral_value) + 1)
+        # Check if you actually have some collateral in Anchor
+        if borrow_limit > 0:
+           
+            query_msg_collateral = {
+                "collaterals": {
+                    "borrower": account_address
+                },
+            }
+            query_msg_collateral_result = Terra_class.terra.wasm.contract_query(Terra_class.mmOverseer, query_msg_collateral)
 
-        if cur_col_ratio > lower_trigger_ratio and \
-                config.Anchor_enable_auto_repay_of_debt:
-            action_to_be_executed = 'repay'
-            # Calculate how much aUST to deposite to return to the desired ratio
-            amount_to_execute_in_ust = loan_amount - \
-                (borrow_limit * (max_ltv_ratio +
-                config.Anchor_target_distance) / max_ltv_ratio)
-        elif cur_col_ratio < upper_trigger_ratio and \
-                config.Anchor_enable_auto_borrow_UST:
-            action_to_be_executed = 'borrow'
-            # Calculate how much aUST to withdraw to return to the desired ratio
-            amount_to_execute_in_ust = (
-                borrow_limit * (max_ltv_ratio + config.Anchor_target_distance) / max_ltv_ratio) - loan_amount
-        else:
-            action_to_be_executed = 'none'
-            amount_to_execute_in_ust = 0
+            query_msg_loan = {
+                "borrower_info": {
+                    "borrower": account_address,
+                    "block_height": self.get_latest_block()
+                },
+            }
+            loan_amount_result = Terra_class.terra.wasm.contract_query(Terra_class.mmMarket, query_msg_loan)
 
-        Anchor_debt_info = {
+            loan_amount = int(loan_amount_result['loan_amount']) / 1e6
+
+            collateral_dict = {}
+            for collateral in query_msg_collateral_result['collaterals']:
+                collateral_dict[collateral[0]] = collateral[1]
+
+            if collateral_dict.get(Terra_class.bETH_token) is not None:
+                amount_bETH_collateral = float(collateral_dict[Terra_class.bETH_token])/1e6
+            else:
+                amount_bETH_collateral = 0
+
+            if collateral_dict.get(Terra_class.bLuna_token) is not None:
+                amount_bLuna_collateral = float(collateral_dict[Terra_class.bLuna_token])/1e6
+            else:
+                amount_bLuna_collateral = 0
+
+            total_collateral_value = borrow_limit / max_ltv_ratio
+            cur_col_ratio = loan_amount / borrow_limit * max_ltv_ratio
+            lower_trigger_ratio = max_ltv_ratio + config.Anchor_lower_distance
+            upper_trigger_ratio = max_ltv_ratio + config.Anchor_upper_distance
+            distance_to_max_ltv = cur_col_ratio - max_ltv_ratio
+
+            collateral_loss_to_liq = float(-(loan_amount / max_ltv_ratio / total_collateral_value) + 1)
+
+            if cur_col_ratio > lower_trigger_ratio and \
+                    config.Anchor_enable_auto_repay_of_debt:
+                action_to_be_executed = 'repay'
+                # Calculate how much aUST to deposite to return to the desired ratio
+                amount_to_execute_in_ust = loan_amount - \
+                    (borrow_limit * (max_ltv_ratio +
+                    config.Anchor_target_distance) / max_ltv_ratio)
+            elif cur_col_ratio < upper_trigger_ratio and \
+                    config.Anchor_enable_auto_borrow_UST:
+                action_to_be_executed = 'borrow'
+                # Calculate how much aUST to withdraw to return to the desired ratio
+                amount_to_execute_in_ust = (
+                    borrow_limit * (max_ltv_ratio + config.Anchor_target_distance) / max_ltv_ratio) - loan_amount
+            else:
+                action_to_be_executed = 'none'
+                amount_to_execute_in_ust = 0
+
+            Anchor_debt_info = {                
+                'loan_amount': loan_amount,
+                'amount_bETH_collateral': amount_bETH_collateral,
+                'amount_bLuna_collateral': amount_bLuna_collateral,
+                'total_collateral_value': total_collateral_value,
+                'borrow_limit': borrow_limit,
+                'cur_col_ratio': cur_col_ratio,
+                'lower_trigger_ratio': lower_trigger_ratio,
+                'upper_trigger_ratio': upper_trigger_ratio,
+                'distance_to_max_ltv': distance_to_max_ltv,
+                'collateral_loss_to_liq':collateral_loss_to_liq,
+                'action_to_be_executed': action_to_be_executed,
+                'amount_to_execute_in_ust': amount_to_execute_in_ust
+            }
             
-            'loan_amount': loan_amount,
-            'amount_bETH_collateral': amount_bETH_collateral,
-            'amount_bLuna_collateral': amount_bLuna_collateral,
-            'total_collateral_value': total_collateral_value,
-            'borrow_limit': borrow_limit,
-            'cur_col_ratio': cur_col_ratio,
-            'lower_trigger_ratio': lower_trigger_ratio,
-            'upper_trigger_ratio': upper_trigger_ratio,
-            'distance_to_max_ltv': distance_to_max_ltv,
-            'collateral_loss_to_liq':collateral_loss_to_liq,
-            'action_to_be_executed': action_to_be_executed,
-            'amount_to_execute_in_ust': amount_to_execute_in_ust
-        }
+        else:
+            Anchor_debt_info = {
+                'loan_amount': 0,
+                'amount_bETH_collateral': 0,
+                'amount_bLuna_collateral': 0,
+                'total_collateral_value': 0,
+                'borrow_limit': borrow_limit,
+                'cur_col_ratio': 0,
+                'lower_trigger_ratio': 0,
+                'upper_trigger_ratio': 0,
+                'distance_to_max_ltv': 0,
+                'collateral_loss_to_liq':0,
+                'action_to_be_executed': 'none',
+                'amount_to_execute_in_ust': 0
+            }
 
         return Anchor_debt_info
 
