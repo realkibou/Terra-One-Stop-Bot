@@ -1,5 +1,7 @@
 .vscode
+.gitignore
 __pycache__/
 logs/
 B_Config.py
 X*.*
+~*.*

@@ -78,6 +78,7 @@ If this bot is helpful to you and helps maximize your gainz, feel free to donate
     * `Logging_detail` Define what level of detail each log shall show
 11. Other stuff
     * `Safety_multiple_on_transaction_fees` Safety multiple on transaction fees
+    * I also added an Excel sheet for you, to help you decide what minimum values you want to set for your claim & sell strategy as well as for the (not yet implemented) deposit SPEC, MIR, ANC into pools strategy.
 
 ## What the One-Stop-Bot does NOT do:
 - Withdraws any UST from Anchor Borrow to deposit that new UST collateral on Mirror
