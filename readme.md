@@ -136,6 +136,7 @@ To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
+- Deposit in SPEC-UST and MIR-UST Pool instead of selling
 - HTML Status Report (function is there, just not formatted properly)
 - Run Mirror withdrawals before repay of Anchor Borrow to make use of that available aUST
 - Build a front end

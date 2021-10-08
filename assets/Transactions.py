@@ -10,6 +10,7 @@ from assets.Terra import Terra
 from assets.Queries import Queries
 import B_Config as config
 from assets.Logging import Logger
+from decimal import Decimal
 
 Terra_class = Terra()
 Queries_class = Queries()
@@ -57,7 +58,7 @@ class Transaction:
     else:
         def Mirror_deposit_collateral_for_position(self, idx, collateral_amount_in_kind, denom):
 
-            amount = int(collateral_amount_in_kind*1e6)
+            amount = int(collateral_amount_in_kind * 1000000)
 
             # Depending on the denom, hence the token that was used for the collateral we need to change this tx's details
             if denom == 'aUST':
@@ -86,7 +87,7 @@ class Transaction:
 
             else:
                 # Luna and UST are natively supported
-                coin = Coin(denom, int(collateral_amount_in_kind*1e6)).to_data()
+                coin = Coin(denom, int(collateral_amount_in_kind * 1000000)).to_data()
                 coins = Coins.from_data([coin])
 
                 contract = Terra_class.Mint
@@ -110,7 +111,7 @@ class Transaction:
 
         def Mirror_withdraw_collateral_for_position(self, idx, collateral_amount_in_kind, denom):
 
-            amount = int(collateral_amount_in_kind*1e6)
+            amount = int(collateral_amount_in_kind * 1000000)
 
             # Depending on the denom, hence the token that was used for the collateral we need to change this tx's details
             if denom == 'aUST':
@@ -133,7 +134,7 @@ class Transaction:
                 coins=Coins()
 
             else:
-                coin = Coin('uusd', int(collateral_amount_in_kind*1e6)).to_data()
+                coin = Coin('uusd', int(collateral_amount_in_kind * 1000000)).to_data()
                 coins = Coins.from_data([coin])
 
                 contract=Terra_class.Mint
@@ -271,7 +272,7 @@ class Transaction:
             execute_msg={
                 "send": {
                     "contract": Terra_class.Terraswap_MIR_UST_Pair,
-                    "amount": str(int(amount*1e6)),
+                    "amount": str(int(amount * 1000000)),
                     "msg": "eyJzd2FwIjp7fX0="
                 }
             }
@@ -288,7 +289,7 @@ class Transaction:
             execute_msg={
                 "send": {
                     "contract": Terra_class.Spectrum_SPEC_UST_Pair,
-                    "amount": str(int(amount*1e6)),
+                    "amount": str(int(amount * 1000000)),
                     "msg": "eyJzd2FwIjp7fX0="
                 }
             }
@@ -306,7 +307,7 @@ class Transaction:
             execute_msg={
                 "send": {
                     "contract": Terra_class.Terraswap_ANC_UST_Pair,
-                    "amount": str(int(amount*1e6)),
+                    "amount": str(int(amount * 1000000)),
                     "msg": "eyJzd2FwIjp7fX0="
                 }
             }
@@ -319,20 +320,25 @@ class Transaction:
 
         def Anchor_deposit_UST_for_Earn(self, amount):
 
-            amount = int(amount * 1e6)
+            # Depoit a bit less, to have some UST for tx feess
+            amount = int(amount * 1000000  - fee_estimation * config.Safety_multiple_on_transaction_fees)
 
-            # Depoit a bit less, to have some UST for tx fees
-            coin = Coin('uusd', amount - fee_estimation * config.Safety_multiple_on_transaction_fees).to_data()
-            coins = Coins.from_data([coin])
+            if amount > 0:
 
-            contract=Terra_class.mmMarket
-            execute_msg={
-                "deposit_stable": {}
-            }
+                coin = Coin('uusd', amount).to_data()
+                coins = Coins.from_data([coin])
 
-            txhash = self.execute_transaction(contract, execute_msg, coins)
-            return txhash
+                contract=Terra_class.mmMarket
+                execute_msg={
+                    "deposit_stable": {}
+                }
 
+                txhash = self.execute_transaction(contract, execute_msg, coins)
+                return txhash
+
+            else:
+                self.default_logger.warning(f'[Anchor Deposit] YOU NEED TO ACT! Amount to deposit is lower than the gas fees ({amount}). Check your settings in B_Config.py')
+                return Terra_class.failed_tx_hash # ! I return a random but failed transaction here. It is not yours, it is just so the bot continues
 
         def Anchor_withdraw_UST_from_Earn(self, amount, denom):
 
@@ -340,7 +346,7 @@ class Transaction:
             if denom == 'UST':
                 amount = amount / Queries_class.get_aUST_rate()
 
-            amount = int(amount * 1e6)
+            amount = int(amount * 1000000)
 
             contract=Terra_class.aTerra
             execute_msg={
@@ -357,24 +363,29 @@ class Transaction:
 
         def Anchor_repay_debt_UST(self, amount):
 
-            amount = int(amount * 1000000)
-
             # Deduct the fee incl safety so there is still some UST left
-            coin = Coin('uusd', amount - fee_estimation * config.Safety_multiple_on_transaction_fees).to_data()
-            coins = Coins.from_data([coin])
+            amount = int(amount * 1000000  - fee_estimation * config.Safety_multiple_on_transaction_fees)
 
-            contract=Terra_class.mmMarket
-            execute_msg={
-                "repay_stable": {}
-            }
+            if amount > 0:
 
-            txhash = self.execute_transaction(contract, execute_msg, coins)
-            return txhash
+                coin = Coin('uusd', amount).to_data()
+                coins = Coins.from_data([coin])
 
+                contract=Terra_class.mmMarket
+                execute_msg={
+                    "repay_stable": {}
+                }
+
+                txhash = self.execute_transaction(contract, execute_msg, coins)
+                return txhash
+
+            else:
+                self.default_logger.warning(f'[Anchor Repay] YOU NEED TO ACT! Amount to deposit is lower than the gas fees ({amount}). Check your settings in B_Config.py')
+                return Terra_class.failed_tx_hash # ! I return a random but failed transaction here. It is not yours, it is just so the bot continues
 
         def Anchor_borrow_more_UST(self, amount):
 
-            amount = int(amount * 1e6 + fee_estimation * config.Safety_multiple_on_transaction_fees)
+            amount = int(amount * 1000000 + fee_estimation * config.Safety_multiple_on_transaction_fees)
 
             contract=Terra_class.mmMarket
             execute_msg={

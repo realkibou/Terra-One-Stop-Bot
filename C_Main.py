@@ -24,6 +24,7 @@ import B_Config as config
  
 # Other imports
 from datetime import datetime, timedelta
+from decimal import Decimal
 import time
 
 #------------------------------
@@ -47,7 +48,7 @@ def keep_safe():
     
     datetime_now = datetime.now()
     aUST_rate = Queries_class.get_aUST_rate()
-    general_estimated_tx_fee = float(Queries_class.get_fee_estimation()/1e6)
+    general_estimated_tx_fee = Decimal(Queries_class.get_fee_estimation()) / 1000000
     begin_time = time.time()
 
     try:
@@ -59,7 +60,7 @@ def keep_safe():
         status_update = False
         
         if current_UST_wallet_balance < general_estimated_tx_fee:
-            default_logger.warning(f'YOU NEED TO ACT! Your wallet balance of {current_UST_wallet_balance:.0f} UST is too low to execute any transaction.')
+            default_logger.warning(f'[Script] YOU NEED TO ACT! Your wallet balance of {current_UST_wallet_balance:.0f} UST is too low to execute any transaction.')
             return False
 
         # default_logger.debug(f'------------------------------------------\n'
@@ -71,34 +72,36 @@ def keep_safe():
         if config.MIR_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_MIR = Queries_class.get_claimable_MIR()
-            value_of_MIR_claim = Queries_class.simulate_MIR_Swap(claimable_MIR)
-            # ! Balance will not be checked again, if enough UST are available for tx fees
-            if value_of_MIR_claim >= config.MIR_min_total_value \
-                    and claimable_MIR > 0 \
-                    and (value_of_MIR_claim/claimable_MIR) >= config.MIR_min_price:
-                claim_MIR_tx = Transaction_class.claim_MIR()
-                claim_MIR_tx_status = Queries_class.get_status_of_tx(claim_MIR_tx)
+            if claimable_MIR > 0:
+                value_of_MIR_claim = Queries_class.simulate_MIR_Swap(claimable_MIR)
+                # ! Balance will not be checked again, if enough UST are available for tx fees
+                if value_of_MIR_claim >= config.MIR_min_total_value \
+                        and (value_of_MIR_claim/claimable_MIR) >= config.MIR_min_price:
+                    claim_MIR_tx = Transaction_class.claim_MIR()
+                    claim_MIR_tx_status = Queries_class.get_status_of_tx(claim_MIR_tx)
 
-                if claim_MIR_tx_status == True:
-                    default_logger.debug(f'[MIR Claim] Success TX: {claim_MIR_tx}')
-                    sell_MIR_tx = Transaction_class.sell_MIR(claimable_MIR)
-                    sell_MIR_tx_status = Queries_class.get_status_of_tx(sell_MIR_tx)
-                    if sell_MIR_tx_status == True:
-                        default_logger.debug(f'[MIR Sell] Success TX: {sell_MIR_tx}')
-                        report_logger.info(
-                            f'[MIR Claim & Sell] {claimable_MIR:.2f} MIR have been claimed and sold for {value_of_MIR_claim:.2f} UST total.')
-                        UST_balance_to_be_deposited_at_Anchor_Earn += value_of_MIR_claim
-                        default_logger.debug(
-                            f'[MIR Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
+                    if claim_MIR_tx_status == True:
+                        default_logger.debug(f'[MIR Claim] Success TX: {claim_MIR_tx}')
+                        sell_MIR_tx = Transaction_class.sell_MIR(claimable_MIR)
+                        sell_MIR_tx_status = Queries_class.get_status_of_tx(sell_MIR_tx)
+                        if sell_MIR_tx_status == True:
+                            default_logger.debug(f'[MIR Sell] Success TX: {sell_MIR_tx}')
+                            report_logger.info(
+                                f'[MIR Claim & Sell] {claimable_MIR:.2f} MIR have been claimed and sold for {value_of_MIR_claim:.2f} UST total.')
+                            UST_balance_to_be_deposited_at_Anchor_Earn += value_of_MIR_claim
+                            default_logger.debug(
+                                f'[MIR Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
+                        else:
+                            default_logger.warning(f'[MIR Sell] Failed TX: {sell_MIR_tx}.\n'
+                                                f'[MIR Sell] Reason: {sell_MIR_tx_status}')
                     else:
-                        default_logger.warning(f'[MIR Sell] Failed TX: {sell_MIR_tx}.\n'
-                                            f'[MIR Sell] Reason: {sell_MIR_tx_status}')
+                        default_logger.warning(f'[MIR Claim] Failed TX: {claim_MIR_tx}.\n'
+                                            f'[MIR Claim] Reason: {claim_MIR_tx_status}')
                 else:
-                    default_logger.warning(f'[MIR Claim] Failed TX: {claim_MIR_tx}.\n'
-                                        f'[MIR Claim] Reason: {claim_MIR_tx_status}')
+                    default_logger.debug(
+                        f'[MIR Claim & Sell] Skipped because claimable MIR value ({value_of_MIR_claim:.2f}) below limit ({config.MIR_min_total_value:.0f}) or current MIR price ({Queries_class.get_MIR_rate():.2f}) below limit ({config.MIR_min_price:.2f}).')
             else:
-                default_logger.debug(
-                    f'[MIR Claim & Sell] Skipped because claimable MIR value ({value_of_MIR_claim:.2f}) below limit ({config.MIR_min_total_value:.0f}) or current MIR price ({Queries_class.get_MIR_rate():.2f}) below limit ({config.MIR_min_price:.2f}).')
+                default_logger.debug(f'[MIR Claim & Sell] Skipped because no claimable MIR ({claimable_MIR:.0f}).')
         else:
             default_logger.debug(
                 f'[MIR Claim & Sell] Skipped because disabled by config ({config.MIR_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
@@ -108,34 +111,36 @@ def keep_safe():
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_SPEC_list = Queries_class.get_claimable_SPEC()
             claimable_SPEC = claimable_SPEC_list[0]
-            value_of_SPEC_claim = Queries_class.simulate_SPEC_Swap(claimable_SPEC)
-            # ! Balance will not be checked again, if enough UST are available for tx fees
-            if value_of_SPEC_claim >= config.SPEC_min_total_value \
-                    and claimable_SPEC > 0 \
-                    and (value_of_SPEC_claim/claimable_SPEC) >= config.SPEC_min_price:
-                claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
-                claim_SPEC_tx_status = Queries_class.get_status_of_tx(claim_SPEC_tx)
+            if claimable_SPEC > 0:
+                value_of_SPEC_claim = Queries_class.simulate_SPEC_Swap(claimable_SPEC)
+                # ! Balance will not be checked again, if enough UST are available for tx fees
+                if value_of_SPEC_claim >= config.SPEC_min_total_value \
+                        and (value_of_SPEC_claim/claimable_SPEC) >= config.SPEC_min_price:
+                    claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
+                    claim_SPEC_tx_status = Queries_class.get_status_of_tx(claim_SPEC_tx)
 
-                if claim_SPEC_tx_status == True:
-                    default_logger.debug(f'[SPEC Claim] Success TX: {claim_SPEC_tx}')
-                    sell_SPEC_tx = Transaction_class.sell_SPEC(claimable_SPEC)
-                    sell_SPEC_tx_status = Queries_class.get_status_of_tx(sell_SPEC_tx)
-                    if sell_SPEC_tx_status == True:
-                        default_logger.debug(f'[SPEC Sell] Success TX: {sell_SPEC_tx}')
-                        report_logger.info(
-                            f'[SPEC Claim & Sell] {claimable_SPEC:.2f} SPEC have been claimed and sold for {value_of_SPEC_claim:.2f} UST total.')
-                        UST_balance_to_be_deposited_at_Anchor_Earn += value_of_SPEC_claim
-                        default_logger.debug(
-                            f'[SPEC Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
+                    if claim_SPEC_tx_status == True:
+                        default_logger.debug(f'[SPEC Claim] Success TX: {claim_SPEC_tx}')
+                        sell_SPEC_tx = Transaction_class.sell_SPEC(claimable_SPEC)
+                        sell_SPEC_tx_status = Queries_class.get_status_of_tx(sell_SPEC_tx)
+                        if sell_SPEC_tx_status == True:
+                            default_logger.debug(f'[SPEC Sell] Success TX: {sell_SPEC_tx}')
+                            report_logger.info(
+                                f'[SPEC Claim & Sell] {claimable_SPEC:.2f} SPEC have been claimed and sold for {value_of_SPEC_claim:.2f} UST total.')
+                            UST_balance_to_be_deposited_at_Anchor_Earn += value_of_SPEC_claim
+                            default_logger.debug(
+                                f'[SPEC Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
+                        else:
+                            default_logger.warning(f'[SPEC Sell] Failed TX: {sell_SPEC_tx}.\n'
+                                                f'[SPEC Sell] Reason: {sell_SPEC_tx_status}')
                     else:
-                        default_logger.warning(f'[SPEC Sell] Failed TX: {sell_SPEC_tx}.\n'
-                                            f'[SPEC Sell] Reason: {sell_SPEC_tx_status}')
+                        default_logger.warning(f'[SPEC Claim] Failed TX: {claim_SPEC_tx}.\n'
+                                            f'[SPEC Claim] Reason: {claim_SPEC_tx_status}')
                 else:
-                    default_logger.warning(f'[SPEC Claim] Failed TX: {claim_SPEC_tx}.\n'
-                                        f'[SPEC Claim] Reason: {claim_SPEC_tx_status}')
+                    default_logger.debug(
+                        f'[SPEC Claim & Sell] Skipped because claimable SPEC value ({value_of_SPEC_claim:.2f}) below limit ({config.SPEC_min_total_value:.0f}) or current SPEC price ({Queries_class.get_SPEC_rate():.2f}) below limit ({config.SPEC_min_price:.2f}).')
             else:
-                default_logger.debug(
-                    f'[SPEC Claim & Sell] Skipped because claimable SPEC value ({value_of_SPEC_claim:.2f}) below limit ({config.SPEC_min_total_value:.0f}) or current SPEC price ({Queries_class.get_SPEC_rate():.2f}) below limit ({config.SPEC_min_price:.2f}).')
+                default_logger.debug(f'[SPEC Claim & Sell] Skipped because no claimable SPEC ({claimable_SPEC:.0f}).')
         else:
             default_logger.debug(
                 f'[SPEC Claim & Sell] Skipped because disabled by config ({config.SPEC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
@@ -144,34 +149,36 @@ def keep_safe():
         if config.ANC_claim_and_sell_token \
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_ANC = Queries_class.get_claimable_ANC()
-            value_of_ANC_claim = Queries_class.simulate_ANC_Swap(claimable_ANC)
-            # ! Balance will not be checked again, if enough UST are available for tx fees
-            if value_of_ANC_claim >= config.ANC_min_total_value \
-                    and claimable_ANC > 0 \
-                    and (value_of_ANC_claim/claimable_ANC) >= config.ANC_min_price:
-                claim_ANC_tx = Transaction_class.claim_ANC()
-                claim_ANC_tx_status = Queries_class.get_status_of_tx(claim_ANC_tx)
+            if claimable_ANC > 0:
+                value_of_ANC_claim = Queries_class.simulate_ANC_Swap(claimable_ANC)
+                # ! Balance will not be checked again, if enough UST are available for tx fees
+                if value_of_ANC_claim >= config.ANC_min_total_value \
+                        and (value_of_ANC_claim/claimable_ANC) >= config.ANC_min_price:
+                    claim_ANC_tx = Transaction_class.claim_ANC()
+                    claim_ANC_tx_status = Queries_class.get_status_of_tx(claim_ANC_tx)
 
-                if claim_ANC_tx_status == True:
-                    default_logger.debug(f'[ANC Claim] Success TX: {claim_ANC_tx}')
-                    sell_ANC_tx = Transaction_class.sell_ANC(claimable_ANC)
-                    sell_ANC_tx_status = Queries_class.get_status_of_tx(sell_ANC_tx)
-                    if sell_ANC_tx_status == True:
-                        default_logger.debug(f'[ANC Sell] Success TX: {sell_ANC_tx}')
-                        report_logger.info(
-                            f'[ANC Claim & Sell] {claimable_ANC:.2f} ANC have been claimed and sold for {value_of_ANC_claim:.2f} UST total.')
-                        UST_balance_to_be_deposited_at_Anchor_Earn += value_of_ANC_claim
-                        default_logger.debug(
-                            f'[ANC Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
+                    if claim_ANC_tx_status == True:
+                        default_logger.debug(f'[ANC Claim] Success TX: {claim_ANC_tx}')
+                        sell_ANC_tx = Transaction_class.sell_ANC(claimable_ANC)
+                        sell_ANC_tx_status = Queries_class.get_status_of_tx(sell_ANC_tx)
+                        if sell_ANC_tx_status == True:
+                            default_logger.debug(f'[ANC Sell] Success TX: {sell_ANC_tx}')
+                            report_logger.info(
+                                f'[ANC Claim & Sell] {claimable_ANC:.2f} ANC have been claimed and sold for {value_of_ANC_claim:.2f} UST total.')
+                            UST_balance_to_be_deposited_at_Anchor_Earn += value_of_ANC_claim
+                            default_logger.debug(
+                                f'[ANC Claim & Sell] UST balance to be despoited at Anchor Earn: {UST_balance_to_be_deposited_at_Anchor_Earn:.0f} UST.')
+                        else:
+                            default_logger.warning(f'[ANC Sell] Failed TX: {sell_ANC_tx}.\n'
+                                                f'[ANC Sell] Reason: {sell_ANC_tx_status}')
                     else:
-                        default_logger.warning(f'[ANC Sell] Failed TX: {sell_ANC_tx}.\n'
-                                            f'[ANC Sell] Reason: {sell_ANC_tx_status}')
+                        default_logger.warning(f'[ANC Claim] Failed TX: {claim_ANC_tx}.\n'
+                                            f'[ANC Claim] Reason: {claim_ANC_tx_status}')
                 else:
-                    default_logger.warning(f'[ANC Claim] Failed TX: {claim_ANC_tx}.\n'
-                                        f'[ANC Claim] Reason: {claim_ANC_tx_status}')
+                    default_logger.debug(
+                        f'[ANC Claim & Sell] Skipped because claimable ANC value ({value_of_ANC_claim:.2f}) below limit ({config.ANC_min_total_value:.0f}) or current ANC price ({Queries_class.get_ANC_rate():.2f}) below limit ({config.ANC_min_price:.2f}).')
             else:
-                default_logger.debug(
-                    f'[ANC Claim & Sell] Skipped because claimable ANC value ({value_of_ANC_claim:.2f}) below limit ({config.ANC_min_total_value:.0f}) or current ANC price ({Queries_class.get_ANC_rate():.2f}) below limit ({config.ANC_min_price:.2f}).')
+                default_logger.debug(f'[ANC Claim & Sell] Skipped because no claimable ANC ({claimable_ANC:.2f}).')
         else:
             default_logger.debug(
                 f'[ANC Claim & Sell] Skipped because disabled by config ({config.ANC_claim_and_sell_token}) or insufficent funds ({(current_UST_wallet_balance - general_estimated_tx_fee):.2f}).')
@@ -181,7 +188,8 @@ def keep_safe():
                 and current_UST_wallet_balance > general_estimated_tx_fee:
             claimable_UST = Queries_class.Mirror_get_claimable_UST(Mirror_position_info)
             # ! Balance will not be checked again, if enough UST are available for tx fees
-            if claimable_UST > config.Mirror_min_amount_UST_to_claim:
+            if claimable_UST > config.Mirror_min_amount_UST_to_claim \
+                and claimable_UST > 0:
                 Mirror_claim_unlocked_UST_tx = Transaction_class.Mirror_claim_unlocked_UST(
                     Mirror_position_info)
                 Mirror_claim_unlocked_UST_tx_status = Queries_class.get_status_of_tx(
@@ -465,7 +473,7 @@ def keep_safe():
                         if Mirror_deposit_collateral_for_position_tx_status == True:
                             default_logger.debug(
                                 f'[Mirror Shorts Deposit] Success TX: {Mirror_deposit_collateral_for_position_tx}')
-                            report_logger.warning(f'YOU NEED TO ACT! There was not enough availabe {collateral_token_denom:.2f} in your wallet to deposit your short position {position_idx} on Mirror.\n'
+                            report_logger.warning(f'[Mirror Shorts Deposit] YOU NEED TO ACT! There was not enough availabe {collateral_token_denom:.2f} in your wallet to deposit your short position {position_idx} on Mirror.\n'
                                                 f'{available_balance:.2f} {collateral_token_denom:.2f} from your wallet, has been deposited in your short position {position_idx} on Mirror.')
                         else:
                             default_logger.warning(f'[Mirror Shorts Deposit] Failed TX: {Mirror_deposit_collateral_for_position_tx}.\n'

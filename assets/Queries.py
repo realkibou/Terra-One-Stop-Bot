@@ -2,6 +2,7 @@
 
 # Terra SDK
 from terra_sdk.core.coins import Coin
+from terra_sdk.core.numeric import Dec
 
 # Other assets
 from assets.Terra import Terra
@@ -12,6 +13,7 @@ from datetime import datetime
 from time import mktime
 import time
 import requests
+from decimal import Decimal
 
 Terra_class = Terra()
 account_address = Terra_class.account_address
@@ -67,7 +69,7 @@ class Queries:
             }
             query_result = Terra_class.terra.wasm.contract_query(Terra_class.mmMarket, query)
 
-            aUST_rate = float(query_result['exchange_rate'])
+            aUST_rate = Decimal(query_result['exchange_rate'])
         return aUST_rate
 
 
@@ -76,7 +78,7 @@ class Queries:
         if config.NETWORK == 'MAINNET':
             uluna_rate = self.all_rates['LUNA']['price']
         else:
-            uluna_rate = float(int(str(Terra_class.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))/1e6)
+            uluna_rate = Decimal(str(Terra_class.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', '')) / 1000000
 
         return uluna_rate
 
@@ -90,7 +92,7 @@ class Queries:
         }
         query_result = Terra_class.terra.wasm.contract_query(Terra_class.Collateral_Oracle, query)
 
-        get_luna_col_multiplier = float(query_result['multiplier'])
+        get_luna_col_multiplier = Decimal(query_result['multiplier'])
 
         return get_luna_col_multiplier
 
@@ -109,7 +111,7 @@ class Queries:
         except:
             native_balance = 0
 
-        return float(int(native_balance)/1e6)
+        return Decimal(native_balance) / 1000000
 
 
     def get_aUST_balance(self):
@@ -122,7 +124,7 @@ class Queries:
         query_result = Terra_class.terra.wasm.contract_query(Terra_class.aTerra, query)
         balance = query_result['balance']
 
-        return float(int(balance)/1e6)
+        return Decimal(balance) / 1000000
 
 
     def get_oracle_price_and_min_col_ratio(self, mAsset):
@@ -150,8 +152,7 @@ class Queries:
         }
         min_col_ratio_result = Terra_class.terra.wasm.contract_query(Terra_class.Mint, query_oracle_price)
 
-        oracle_price_and_min_col_ratio = [
-            position_ids_result['rate'], min_col_ratio_result['min_collateral_ratio']]
+        oracle_price_and_min_col_ratio = [Decimal(position_ids_result['rate']), Decimal(min_col_ratio_result['min_collateral_ratio'])]
 
         return oracle_price_and_min_col_ratio
 
@@ -185,17 +186,17 @@ class Queries:
                 collateral_token_denom = position['collateral']['info']['native_token']['denom']
 
             # This value is returned from the blockchain in-kind.
-            collateral_amount_in_kind = int(position['collateral']['amount']) / 1e6
+            collateral_amount_in_kind = Decimal(position['collateral']['amount']) / 1000000
 
             # As the mAsset is valued in UST, we convert the colateral_amount also into UST here.
             if collateral_token_denom == 'aUST':
-                collateral_amount_in_ust = collateral_amount_in_kind * self.get_aUST_rate()
+                collateral_amount_in_ust = collateral_amount_in_kind * Decimal(self.get_aUST_rate())
             elif collateral_token_denom == 'uluna':
-                collateral_amount_in_ust = collateral_amount_in_kind * self.get_uluna_rate()
+                collateral_amount_in_ust = collateral_amount_in_kind * Decimal(self.get_uluna_rate())
             elif collateral_token_denom == 'uusd':
                 collateral_amount_in_ust = collateral_amount_in_kind
 
-            shorted_asset_qty = int(position['asset']['amount']) / 1e6
+            shorted_asset_qty = Decimal(position['asset']['amount']) / 1000000
             mAsset_address = position['asset']['info']['token']['contract_addr']
 
             try:
@@ -204,26 +205,23 @@ class Queries:
                 mAsset_symbol = 'Not in assets.Contact_addresses.py'
 
             oracle_price_and_min_col_ratio = self.get_oracle_price_and_min_col_ratio(mAsset_address)
-            oracle_price = float(oracle_price_and_min_col_ratio[0])
-            shorted_asset_amount = float(
-                oracle_price_and_min_col_ratio[0]) * shorted_asset_qty
+            oracle_price = oracle_price_and_min_col_ratio[0]
+            shorted_asset_amount = oracle_price_and_min_col_ratio[0] * shorted_asset_qty
 
             # If the collateral is provided in UST or aUST the min_col_ratio is as received form the query.
             # if the colalteral is Luna it is luna_col_multiplier (4/3) of the min_col_ratio
             if collateral_token_denom == 'uluna':
-                min_col_ratio = float(
-                    oracle_price_and_min_col_ratio[1]) * self.luna_col_multiplier
+                min_col_ratio = oracle_price_and_min_col_ratio[1] * Decimal(self.get_luna_col_multiplier())
             else:
-                min_col_ratio = float(oracle_price_and_min_col_ratio[1])
+                min_col_ratio = oracle_price_and_min_col_ratio[1]
 
-            cur_col_ratio = collateral_amount_in_ust / \
-                (oracle_price * shorted_asset_qty)
-            lower_trigger_ratio = min_col_ratio + config.Mirror_lower_distance
-            target_ratio = min_col_ratio + config.Mirror_target_distance
-            upper_trigger_ratio = min_col_ratio + config.Mirror_upper_distance
+            cur_col_ratio = collateral_amount_in_ust / (oracle_price * shorted_asset_qty)
+            lower_trigger_ratio = min_col_ratio + Decimal(config.Mirror_lower_distance)
+            target_ratio = min_col_ratio + Decimal(config.Mirror_target_distance)
+            upper_trigger_ratio = min_col_ratio + Decimal(config.Mirror_upper_distance)
 
-            collateral_loss_to_liq = float(-(shorted_asset_amount * min_col_ratio / collateral_amount_in_ust) + 1)
-            shorted_mAsset_gain_to_liq = float((collateral_amount_in_ust / min_col_ratio / shorted_asset_amount) - 1)
+            collateral_loss_to_liq = -(shorted_asset_amount * min_col_ratio / collateral_amount_in_ust) + 1
+            shorted_mAsset_gain_to_liq = (collateral_amount_in_ust / min_col_ratio / shorted_asset_amount) - 1
 
             distance_to_min_col = cur_col_ratio - min_col_ratio
 
@@ -232,8 +230,7 @@ class Queries:
                 action_to_be_executed = 'deposit'
                 # Calculate how much in-kind to withdraw to return to the desired ratio, even if the collaterial is not in UST
                 # v This is how much collateral is already in
-                amount_to_execute_in_ust = target_ratio * \
-                    shorted_asset_amount - collateral_amount_in_ust
+                amount_to_execute_in_ust = target_ratio * shorted_asset_amount - collateral_amount_in_ust
                 # ^ This is how much absolut collateral in UST is required to get the desired target_ratio
                 # Quick rule of three
                 amount_to_execute_in_kind = (
@@ -247,8 +244,7 @@ class Queries:
                 amount_to_execute_in_ust = collateral_amount_in_ust - target_ratio * shorted_asset_amount
                 # ^ This is how much absolut collateral in UST is required to get the desired target_ratio
                 # Quick rule of three
-                amount_to_execute_in_kind = (
-                    collateral_amount_in_kind / collateral_amount_in_ust) * amount_to_execute_in_ust
+                amount_to_execute_in_kind = (collateral_amount_in_kind / collateral_amount_in_ust) * amount_to_execute_in_ust
 
             else:
                 action_to_be_executed = 'none'
@@ -309,7 +305,7 @@ class Queries:
         for reward in query_result['reward_infos']:
             claimable += int(reward['pending_reward'])
 
-        return float(claimable/1e6)
+        return Decimal(claimable) / 1000000
 
 
     def get_claimable_SPEC(self):
@@ -375,19 +371,19 @@ class Queries:
             claimable_pylonFarm += int(reward['pending_spec_reward'])
 
         # claimable_SPEC_dict = {
-        #     "claimable_mirrorFarm": float(claimable_mirrorFarm/1e6),
-        #     "claimable_anchorFarm": float(claimable_anchorFarm/1e6),
-        #     "claimable_specFarm": float(claimable_specFarm/1e6),
-        #     "claimable_pylonFarm": float(claimable_pylonFarm/1e6),
+        #     "claimable_mirrorFarm": Decimal(claimable_mirrorFarm)/1000000,
+        #     "claimable_anchorFarm": Decimal(claimable_anchorFarm)/1000000,
+        #     "claimable_specFarm": Decimal(claimable_specFarm)/1000000,
+        #     "claimable_pylonFarm": Decimal(claimable_pylonFarm)/1000000,
         # }
 
         claimable_SPEC_list = [
-            float((
+            Decimal(
             +claimable_mirrorFarm \
             +claimable_anchorFarm\
             +claimable_specFarm \
             +claimable_pylonFarm
-            )/1e6),
+            ) / 1000000,
             claimable_mirrorFarm >0,
             claimable_anchorFarm >0,
             claimable_specFarm >0,
@@ -412,7 +408,7 @@ class Queries:
 
         query_result = Terra_class.terra.wasm.contract_query(Terra_class.mmMarket, query)
 
-        claimable = float(query_result['pending_rewards']) / 1e6
+        claimable = Decimal(query_result['pending_rewards']) / 1000000
 
         return claimable
 
@@ -437,8 +433,8 @@ class Queries:
                 # Status code 500 means, that there is no unclaimed UST. If so, this exception can be ignored.             
                 query_result = Terra_class.terra.wasm.contract_query(Terra_class.Lock, query)
 
-                locked_amount = float(query_result['locked_amount'])
-                unlock_time = float(query_result['unlock_time'])
+                locked_amount = Decimal(query_result['locked_amount'])
+                unlock_time = Decimal(query_result['unlock_time'])
                 if unlock_time < int(datetime.utcnow().timestamp()):
                     claimable += locked_amount
                 
@@ -446,7 +442,7 @@ class Queries:
                 # If a short position has already been claimed, this query will result in an error. We catch it here.
                 claimable = 0
 
-        return float(claimable/1e6)
+        return Decimal(claimable) / 1000000
 
 
     def simulate_MIR_Swap(self, amount):
@@ -457,7 +453,7 @@ class Queries:
         query = {
             "simulation": {
                 "offer_asset": {
-                    "amount": str(int(amount * 1e6)),
+                    "amount": str(int(amount * 1000000)),
                     "info": {
                         "token": {
                             "contract_addr": Terra_class.MIR_token
@@ -467,7 +463,7 @@ class Queries:
             }
         }
         query_result = Terra_class.terra.wasm.contract_query(Terra_class.Terraswap_MIR_UST_Pair, query)
-        MIR_return = float(int(query_result['return_amount'])/1e6)
+        MIR_return = Decimal(query_result['return_amount']) / 1000000
 
         return MIR_return
 
@@ -480,7 +476,7 @@ class Queries:
         query = {
             "simulation": {
                 "offer_asset": {
-                    "amount": str(int(amount*1e6)),
+                    "amount": str(int(amount * 1000000)),
                     "info": {
                         "token": {
                             "contract_addr": Terra_class.SPEC_token
@@ -490,7 +486,7 @@ class Queries:
             }
         }
         query_result = Terra_class.terra.wasm.contract_query(Terra_class.Spectrum_SPEC_UST_Pair, query)
-        SPEC_return = float(int(query_result['return_amount'])/1e6)
+        SPEC_return = Decimal(query_result['return_amount']) / 1000000
 
         return SPEC_return
 
@@ -501,7 +497,7 @@ class Queries:
         query = {
             "simulation": {
                 "offer_asset": {
-                    "amount": str(int(amount*1e6)),
+                    "amount": str(int(amount * 1000000)),
                     "info": {
                         "token": {
                             "contract_addr": Terra_class.ANC_token
@@ -511,7 +507,7 @@ class Queries:
             }
         }
         query_result = Terra_class.terra.wasm.contract_query(Terra_class.Terraswap_ANC_UST_Pair, query)
-        ANC_return = float(int(query_result['return_amount'])/1e6)
+        ANC_return = Decimal(query_result['return_amount']) / 1000000
 
         return ANC_return
 
@@ -526,7 +522,7 @@ class Queries:
         query_result = Terra_class.terra.wasm.contract_query(Terra_class.mmOverseer, query)
 
         for elem in query_result['elems']:
-            max_ltv_ratio[elem['symbol']] = float(elem['max_ltv'])
+            max_ltv_ratio[elem['symbol']] = Decimal(elem['max_ltv'])
 
         return max_ltv_ratio
 
@@ -535,7 +531,7 @@ class Queries:
         # Input: -
         # Output: Collects, calculated all there is required to know for your Anchor debt
 
-        max_ltv_ratio = self.Anchor_get_max_ltv_ratio()['BETH']
+        max_ltv_ratio = Decimal(self.Anchor_get_max_ltv_ratio()['BETH'])
 
         query_msg_borrow_limit = {
             "borrow_limit": {
@@ -544,7 +540,7 @@ class Queries:
         }
         borrow_limit_result = Terra_class.terra.wasm.contract_query(Terra_class.mmOverseer, query_msg_borrow_limit)
 
-        borrow_limit = int(borrow_limit_result['borrow_limit']) / 1e6
+        borrow_limit = Decimal(borrow_limit_result['borrow_limit']) / 1000000
 
         # Check if you actually have some collateral in Anchor
         if borrow_limit > 0:
@@ -564,29 +560,29 @@ class Queries:
             }
             loan_amount_result = Terra_class.terra.wasm.contract_query(Terra_class.mmMarket, query_msg_loan)
 
-            loan_amount = int(loan_amount_result['loan_amount']) / 1e6
+            loan_amount = Decimal(loan_amount_result['loan_amount']) / 1000000
 
             collateral_dict = {}
             for collateral in query_msg_collateral_result['collaterals']:
                 collateral_dict[collateral[0]] = collateral[1]
 
             if collateral_dict.get(Terra_class.bETH_token) is not None:
-                amount_bETH_collateral = float(collateral_dict[Terra_class.bETH_token])/1e6
+                amount_bETH_collateral = Decimal(collateral_dict[Terra_class.bETH_token]) / 1000000
             else:
                 amount_bETH_collateral = 0
 
             if collateral_dict.get(Terra_class.bLuna_token) is not None:
-                amount_bLuna_collateral = float(collateral_dict[Terra_class.bLuna_token])/1e6
+                amount_bLuna_collateral = Decimal(collateral_dict[Terra_class.bLuna_token]) / 1000000
             else:
                 amount_bLuna_collateral = 0
 
             total_collateral_value = borrow_limit / max_ltv_ratio
             cur_col_ratio = loan_amount / borrow_limit * max_ltv_ratio
-            lower_trigger_ratio = max_ltv_ratio + config.Anchor_lower_distance
-            upper_trigger_ratio = max_ltv_ratio + config.Anchor_upper_distance
+            lower_trigger_ratio = max_ltv_ratio + Decimal(config.Anchor_lower_distance)
+            upper_trigger_ratio = max_ltv_ratio + Decimal(config.Anchor_upper_distance)
             distance_to_max_ltv = cur_col_ratio - max_ltv_ratio
 
-            collateral_loss_to_liq = float(-(loan_amount / max_ltv_ratio / total_collateral_value) + 1)
+            collateral_loss_to_liq = -(loan_amount / max_ltv_ratio / total_collateral_value) + 1
 
             if cur_col_ratio > lower_trigger_ratio and \
                     config.Anchor_enable_auto_repay_of_debt:
