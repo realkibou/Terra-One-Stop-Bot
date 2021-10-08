@@ -10,6 +10,7 @@ import B_Config as config
 # Other imports
 from datetime import datetime
 from time import mktime
+import time
 import requests
 
 Terra_class = Terra()
@@ -432,7 +433,7 @@ class Queries:
             }
 
             try:
-                # Todo: If the LCDResponseError is a Status 500 keep calm and carry on.
+                
                 # Status code 500 means, that there is no unclaimed UST. If so, this exception can be ignored.             
                 query_result = Terra_class.terra.wasm.contract_query(Terra_class.Lock, query)
 
@@ -629,7 +630,7 @@ class Queries:
                 return True
 
         # Since we need to wait a bit for the transaction we add a delay here. That way we make sure that the transaction before had time to go through.
-        # time.sleep(5) # Todo "if code fails, get the response from the broadcast"
+        time.sleep(5)
 
         try:
             status = Terra_class.terra.tx.tx_info(tx_hash).code

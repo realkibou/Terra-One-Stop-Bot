@@ -74,6 +74,7 @@ def keep_safe():
             value_of_MIR_claim = Queries_class.simulate_MIR_Swap(claimable_MIR)
             # ! Balance will not be checked again, if enough UST are available for tx fees
             if value_of_MIR_claim >= config.MIR_min_total_value \
+                    and claimable_MIR > 0 \
                     and (value_of_MIR_claim/claimable_MIR) >= config.MIR_min_price:
                 claim_MIR_tx = Transaction_class.claim_MIR()
                 claim_MIR_tx_status = Queries_class.get_status_of_tx(claim_MIR_tx)
@@ -110,12 +111,13 @@ def keep_safe():
             value_of_SPEC_claim = Queries_class.simulate_SPEC_Swap(claimable_SPEC)
             # ! Balance will not be checked again, if enough UST are available for tx fees
             if value_of_SPEC_claim >= config.SPEC_min_total_value \
+                    and claimable_SPEC > 0 \
                     and (value_of_SPEC_claim/claimable_SPEC) >= config.SPEC_min_price:
                 claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
                 claim_SPEC_tx_status = Queries_class.get_status_of_tx(claim_SPEC_tx)
 
                 if claim_SPEC_tx_status == True:
-                    default_logger.debug(f'[SPEc Claim] Success TX: {claim_SPEC_tx}')
+                    default_logger.debug(f'[SPEC Claim] Success TX: {claim_SPEC_tx}')
                     sell_SPEC_tx = Transaction_class.sell_SPEC(claimable_SPEC)
                     sell_SPEC_tx_status = Queries_class.get_status_of_tx(sell_SPEC_tx)
                     if sell_SPEC_tx_status == True:
@@ -145,6 +147,7 @@ def keep_safe():
             value_of_ANC_claim = Queries_class.simulate_ANC_Swap(claimable_ANC)
             # ! Balance will not be checked again, if enough UST are available for tx fees
             if value_of_ANC_claim >= config.ANC_min_total_value \
+                    and claimable_ANC > 0 \
                     and (value_of_ANC_claim/claimable_ANC) >= config.ANC_min_price:
                 claim_ANC_tx = Transaction_class.claim_ANC()
                 claim_ANC_tx_status = Queries_class.get_status_of_tx(claim_ANC_tx)
@@ -536,6 +539,7 @@ def keep_safe():
     
     # Write all from current report_logger to array
     report_content = report_array.getvalue()
+    print(report_content)
 
     # Notify user about something that has been done
     if config.Send_me_a_report \

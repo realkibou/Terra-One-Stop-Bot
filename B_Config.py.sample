@@ -21,11 +21,11 @@ mnemonic = os.environ.get('MNEMONIC', '')
 # CLAIM & SELL MIR, SPEC. ANC REWARDS
 # Important: min_price AND min_total_value must both be fulfilled for your token to be sold.
 MIR_claim_and_sell_token = False
-MIR_min_price = 5  # Min price acceptable to sell in UST
+MIR_min_price = 4  # Min price acceptable to sell in UST
 MIR_min_total_value = 17 # Min amount (qty * price in UST) to sell MIR tokens.
 
 SPEC_claim_and_sell_token = False
-SPEC_min_price = 7.5
+SPEC_min_price = 8
 SPEC_min_total_value = 51
 
 ANC_claim_and_sell_token = False

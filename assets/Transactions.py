@@ -248,7 +248,6 @@ class Transaction:
 
             sendtx = Terra_class.wallet.create_and_sign_tx(send)
             result = Terra_class.terra.tx.broadcast(sendtx)
-
             return result.txhash
 
 
@@ -390,6 +389,8 @@ class Transaction:
             return txhash
 
         def execute_transaction(self, contract, execute_msg, coins):
+
+            # Todo: If error 504 (timeout), try again.
 
             try:
                 message = MsgExecuteContract(
