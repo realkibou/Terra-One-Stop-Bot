@@ -7,34 +7,27 @@ NETWORK = 'TESTNET' # TESTNET or MAINNET
 mnemonic = os.environ.get('MNEMONIC', '')
 
 # Read me: When to claim, sell, unstake? - What is the right min_total_value?
-# That depends on what you want to do with that free UST. Let's say you want to hold that profit on Anchor Earn:
-# If you plan to sell and then deposit the gained UST for at least 1 month, I will gain (19.45% APY) 1.47%.
-# If the transaction fees are 2 UST, the break-even amount to sell/deposit would be (2 / 1.47% =) 136 UST.
-# If you would hold it for 2 month 2.96%, hence (2 / 2.96% =) 67 UST.
+# Check the Excel file attached in this repository
 
-# Break-even minimal withdraws 1 month or 2 months
-# Anchor Tx fees 2 UST -> 136 UST or 67 UST
-# Mirror Tx fees 0.5 UST -> 34 UST or 17 UST
-# Spec Tx fees 1.5 UST -> 102 UST or 51 UST
 # Anchor Earn roundtrip break-even for 1 day is about 9000 UST.
 
 # CLAIM & SELL MIR, SPEC. ANC REWARDS
 # Important: min_price AND min_total_value must both be fulfilled for your token to be sold.
 MIR_claim_and_sell_token = False
 MIR_min_price = 4  # Min price acceptable to sell in UST
-MIR_min_total_value = 17 # Min amount (qty * price in UST) to sell MIR tokens.
+MIR_min_total_value = 193 # Min amount (qty * price in UST) to sell MIR tokens.
 
 SPEC_claim_and_sell_token = False
-SPEC_min_price = 8
-SPEC_min_total_value = 51
+SPEC_min_price = 9
+SPEC_min_total_value = 224
 
 ANC_claim_and_sell_token = False
-ANC_min_price = 3.5
-ANC_min_total_value = 67
+ANC_min_price = 4
+ANC_min_total_value = 278
 
 # MIRROR: CLAIMING UNLOCKED UST
 Mirror_claim_unlocked_UST = False
-Mirror_min_amount_UST_to_claim = 17
+Mirror_min_amount_UST_to_claim = 193
 
 # ANCHOR BORROW: MAINTAIN LTV RATIO / REPAY BORROWED UST IF REQUIRED
 # READ the example carefully, as Anchor works opposite for Mirror's liquidation ratio's logic.
@@ -46,19 +39,19 @@ Anchor_enable_withdraw_of_deposited_UST = False # If even after a withdrawal of 
 Anchor_enable_partially_repay_if_not_enough_UST_in_wallet = False
 Anchor_lower_distance = -0.1
 Anchor_target_distance = -0.15
-Anchor_min_repay_limit = 50 # Even if a re-pay is required to restore the required target_distance, it will not be executed if the _min_repay_limit is not met.
+Anchor_min_repay_limit = 295 # Even if a re-pay is required to restore the required target_distance, it will not be executed if the _min_repay_limit is not met.
 
 # ANCHOR: BORROW MORE UST FOR YOUR DEPOSITED COLLATERAL
 Anchor_enable_auto_borrow_UST = False # If you want, you can tell the script to borrow more from Anchor if your set upper_distance allows it.
 Anchor_upper_distance = -0.2  # Upper distance above that a withdrawal will be executed.
 #           If the collateral ratio is bigger than 0.6 + upper_distance (by default: 0.6 + -0.2 = 0.40 = 40%) it will withdraw collateral.
 #           It will borrow more UST to get back to 0.6 + target_distance (by default: 0.6 + -0.15 = 0.45 = 45%).
-Anchor_min_borrow_limit = 67 # Set a minimum limit; otherwise the script may borrow continuously.
+Anchor_min_borrow_limit = 295 # Set a minimum limit; otherwise the script may borrow continuously.
 Anchor_borrow_cooldown = 1 # Cooldown in days after collateral has been withdrawn. Example: 3 means it happens only once every 3 days.
 
 # ANCHOR EARN: DEPOSIT UST FROM SELLING ANC, MIR, SPEC
 Anchor_enable_deposit_borrowed_UST = False
-Anchor_min_deposit_amount = 136
+Anchor_min_deposit_amount = 148
 
 # MIRROR: MAINTAIN COLLATERAL RATIO / DEPOSIT COLLATERAL IF REQUIRED
 # Example:  Let's say the minimum ratio for the given mAsset on Mirror is 150% or 1.5.
@@ -67,7 +60,7 @@ Anchor_min_deposit_amount = 136
 Mirror_enable_deposit_collateral = False
 Mirror_lower_distance = 0.25
 Mirror_target_distance = 0.50
-Mirror_min_deposit_limit_in_UST = 50 # Even if a deposit is required to restore the required target_distance, it will not be executed if the min_deposit_limit_in_UST is not met.
+Mirror_min_deposit_limit_in_UST = 295 # Even if a deposit is required to restore the required target_distance, it will not be executed if the min_deposit_limit_in_UST is not met.
 
 # MIRROR: WITHDRAWAL OF COLLATERAL
 # If you want, you can tell the script to withdraw collateral if your set upper_distance allows it.
@@ -76,7 +69,7 @@ Mirror_enable_withdraw_collateral = False
 Mirror_upper_distance = 0.75  # Upper distance above that a withdrawal will be executed.
 #           If the collateral ratio is bigger than 1.5 + upper_distance (by default: 1.5 + 0.75 = 2.25 = 225%) it will withdraw collateral.
 #           It will deposit enough collateral to get back to 1.5 + target_distance (by default: 1.5 + 0.2 = 1.7 = 170%).
-Mirror_min_withdraw_limit_in_UST = 35
+Mirror_min_withdraw_limit_in_UST = 295
 Mirror_withdraw_cooldown = 1 # Cooldown in days after collateral has been withdrawn. Example: 3 means it happens only once every 3 days. 0 means it will always happen.
 
 # NOTIFICATIONS
@@ -85,16 +78,16 @@ Send_me_a_report = True # Logs summary of what has happened, if something has ha
 Notify_Slack = False
 Notify_Telegram = False
 Notify_Gmail = False
-Send_me_a_status_update = True # Even if nothing is done by the script, you can receive a status update with your key infos your Anchor / Positions.
+Send_me_a_status_update = False # Even if nothing is done by the script, you can receive a status update with your key infos your Anchor / Positions.
 Status_update_frequency = 24 # In hours. 24 means once per 24h.
-Status_update_time = '9:00' # Time to send you the status_update based on server time
+Status_update_time = '14:00' # Time to send you the status_update based on server time
 
 # OTHER
 Run_interval_for_Scheduler = 5 # in minutes. 5 means every 5 minutes
-Safety_multiple_on_transaction_fees = 1 # Transaction fees may fluctuate. Also several transactions may be executed in a row. This multiple gives you a margin of safety.
+Safety_multiple_on_transaction_fees = 1 # Multiplier for Anchor Borrow, Repay, Deposit. So you will have a bit of UST in your wallet left for future transactions.
 
 # DEBUGGING
-Debug_mode = False  # If False, default.log will include almost everything. If False only WARNINGs and ERRORs will be logged.
+Debug_mode = True  # If False, default.log will include almost everything. If False only WARNINGs and ERRORs will be logged.
 Disable_all_transaction_defs = True # So you can test the script with your Mainnet account, but no transaction will be executed.
 Return_failed_tx = False # If Disable_all_transaction_def is False, you can return for all transaction_defs a failed transaction to test.
 

@@ -645,7 +645,7 @@ class Queries:
                 return True
 
         # Since we need to wait a bit for the transaction we add a delay here. That way we make sure that the transaction before had time to go through.
-        time.sleep(5)
+        time.sleep(15)
 
         try:
             status = Terra_class.terra.tx.tx_info(tx_hash).code
