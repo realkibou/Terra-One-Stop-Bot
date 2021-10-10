@@ -5,14 +5,23 @@ Then, this bot is for you!
 
 Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra.
 
-I also included 2x Google Spreadsheet that should help you with the decision making what mAsset to pick and what minimum values to pick for the One-Stop-Bot to operate on:
-- Delta Neutral Simulation & Playground: https://docs.google.com/spreadsheets/d/19WyuPtGz1SGJsCKZGskD7JAGAT9THUFy9b2GtbMR7JI (make a copy and change the yellow filled fields to play on the sheet tab '0. Calc')
-- Decision Help Min Values: https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M
-
 ## Thank you!
 If this bot is helpful to you and helps maximize your gainz, feel free to donate a bit to `terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg`. This will also keep the development going and the bot up-to-date. Thank you! :)
 
 *Special thanks to unl1k3ly as his bot taught me what I needed to know. Thanks Terra, Mirror, Spectrum, Anchor team and the Terra Community!*
+
+## How to pick the right mAsset for your strategy!
+I found there are many calculations out there. But most are just wrong. They do not consider volatility or the most important factor hodl time.
+
+So I made 2x overly detailed calculation that I base my decisions on. I consider this valuable for you, even if you do not run the Terra-One-Stop-Bot.
+
+Delta Neutral Simulation & Playground: https://docs.google.com/spreadsheets/d/19WyuPtGz1SGJsCKZGskD7JAGAT9THUFy9b2GtbMR7JI 
+- '3. Conclusion' shows you which mAssets current would return what APY. You can change what top mAssets you want to consider. The sheet calculates those rankings once per hour new.
+- If you want to play a little bit around look at the sheet '0. Calc', and change the yellow filled cells.
+- The amount you want to put in is not relevant, as all is calculated based on a percentage basis, as transaction costs are not considered.
+
+Decision Help Min Values: https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M
+- Gives you a basis to make your decision what minimum deposits, withdraws, sell quantities, etc. to set for the Terra-One-Stop-Bot.
 
 ## What this One-Stop-Bot does
 1. Claims and sells your unclaimed MIR, SPEC, ANC tokens
@@ -85,48 +94,48 @@ If this bot is helpful to you and helps maximize your gainz, feel free to donate
     * I also added an Excel sheet for you, to help you decide what minimum values you want to set for your claim & sell strategy as well as for the (not yet implemented) deposit SPEC, MIR, ANC into pools strategy.
 
 ## What the One-Stop-Bot does NOT do:
-- Withdraws any UST from Anchor Borrow to deposit that new UST collateral on Mirror
-- Deposits any UST to Anchor Earn to deposit that new aUST as collateral on Mirror
-- Sells, buys, swaps any Luna to deposit it as collateral on Mirror
-- Uses withdrawn aUST or UST from Mirror to repay your Anchor Borrow debt (if you run the One-Stop-Bot often enough of course it will loop and eventually repay that debt.)
+- Withdraws any UST from Anchor Borrow to deposit that new UST collateral on Mirror.
+- Deposits any UST to Anchor Earn to deposit that new aUST as collateral on Mirror.
+- Sells, buys, swaps any Luna to deposit it as collateral on Mirror.
+- Uses withdrawn aUST or UST from Mirror to repay your Anchor Borrow debt (if you run the One-Stop-Bot often enough of course it will loop and eventually repay that debt).
 - If you withdraw pool rewards, sell them, claim UST etc. and it is still not enough UST to exceed the `config.Anchor_min_deposit_amount` that UST will just remain in your wallet. They will NOT be "remembered" for the next run of the One-Stop-Bot.
-- The bot currently only supports UST, aUST and Luna as collateral on Mirror.
+- The bot currently only supports UST, aUST and Luna as collateral on Mirror (you really should only use aUST anyway).
 
 ## Very important remarks!
-- This bot is quite heavy, so do not run it too short intervals. It currently runs at around 1 min. Depending on your internet connection.
-- Use this bot at your own risk. I have done my best to check it, but program bugs & human bugs happen.
-- This bot can be used with the Testnet. I strongly recommend playing on the Testnet or with `Disable_all_transaction_defs` set to True first, before letting it manage your funds. Here you can get free UST, LUNA etc: https://faucet.terra.money/
-- Since the LTV/min ratios on Mirror and Anchor are defined exactly opposite each other, it may get confusing to set the `lower_distance`, `target_distance`, `upper_distance`. I wrote some explanations, but make sure you take time to understand it
+- This bot is quite heavy, so do not run it too short intervals. It currently has a runtime of around 1 min. Depending on your internet connection.
+- Use this bot at your own risk. I have done my best to check it, but program bugs & human bugs happen and I am not financial advisor.
+- This bot can be used with the Testnet. I strongly recommend playing on the Testnet or with `Disable_all_transaction_defs` set to True first, before letting it manage your funds for real. Here you can get free UST, LUNA etc: https://faucet.terra.money/.
+- Since the LTV/min ratios on Mirror and Anchor are defined exactly opposite each other, it may gets confusing to set the `lower_distance`, `target_distance`, `upper_distance`. I wrote some explanations, but make sure you take time to understand it.
 - For your own safety all functions are set to False by default. Enable them one by one.
 - It's recommended to run this code in a contained environment at maximum security.
 - Deposits / withdrawals of collateral as well as repayments / borrowing of debt are limited by an amount. So if your collateral loses lots of value in one day, there will be multiple deposits / repayments per day to keep your funds safe.
 - If however, your collateral gains in value and you withdraw aUST from Mirror or borrow more UST from Anchor a time cooldown (which you can define) will act as a limit. If you set the cooldown to 3, only once every 3 days collateral will be withdrawn from Mirror / more UST will be borrowed from Anchor. This decreases the risk / transaction fees when one day your collateral value spikes, just to crash the next day.
-- Since a wallet seed is required, ensure you protect it and know what you're doing while using this automation
+- Since a wallet seed is required, ensure you protect it and know what you're doing while using this automation.
 - If you don't want to pass secrets into the B_Config.py file, make sure you declare it as a system variable.
 - **Everything** will be logged into the `./logs` folder. Make sure you check those from time to time!
 
 ## How to install it
-1. `git clone` this repository
-2. Rename `B_Config.py.sample` to `B_Config.py`
-3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*
-4. Run  `pip3 install -r A_Requirements.txt`
-5. Run the One-Stop-Bot with a crontab directly or with `python D_Scheduler.py`
+1. `git clone` this repository.
+2. Rename `B_Config.py.sample` to `B_Config.py`.
+3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*.
+4. Run  `pip3 install -r A_Requirements.txt`.
+5. Run the One-Stop-Bot with a crontab directly or with `python D_Scheduler.py`.
 6. Make yourself familiar with the bot by using the TESTNET first (Get free UST/LUNA here: https://faucet.terra.money/) by enabling features step-by-step.
 7. Then use your real wallet on the MAINNET but with `Disable_all_transaction_defs` set to True.
 8. If you feel comfortable set `Disable_all_transaction_defs` to False and let the bot work for you. 
 
 ## Slack Notification Setup
 If you use more Slack, it might be simpler to be notified there using Slack Webhooks.
-1. Create a Slack APP
-2. Add the APP to a channel and get a webhook URL to feed the `B_Config.py`
-More information can be found via this link https://api.slack.com/incoming-webhooks
+1. Create a Slack APP.
+2. Add the APP to a channel and get a webhook URL to feed the `B_Config.py`.
+More information can be found via this link https://api.slack.com/incoming-webhooks.
 
 ## Telegram Notification Setup
 If you want to be notified via Telegram, you'd need to get `TELEGRAM_TOKEN` and your `TELEGRAM_CHAT_ID` from your Telegram bot.
 1. On Telegram, find `@BotFather` and open a DM.
 2. Use `/newbot` to create a new bot for yourself.
-3. Then, name the bot as you wish, ie: `MyCoolBot`
-4. Now, choose whatever username you desire for your bot, ie: `MyCool_bot` 
+3. Then, name the bot as you wish, ie: `MyCoolBot`.
+4. Now, choose whatever username you desire for your bot, ie: `MyCool_bot`.
 5. Done! You should see a "Congratulations" message from BotFather.
 6. Add `MyCool_bot` to a group.
 7. To get your own `chat_id`, simply send a message in the group with your bot and run the following command below: `curl -s https://api.telegram.org/botACCESSTOKEN/getUpdates` (replace `ACCESSTOKEN` with an actual token you just got from item #5).
@@ -134,17 +143,17 @@ If you want to be notified via Telegram, you'd need to get `TELEGRAM_TOKEN` and 
 
 ## Gmail Notification Setup
 To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
-1. Go to manage my Google account (https://myaccount.google.com/security)
+1. Go to manage my Google account (https://myaccount.google.com/security).
 2. Under "Signing in to Google" confirm that "2-Step Verification" is "On" for the account.
 3. Under "Signing in to Google" select "App passwords".
 4. Select the app as "Mail" and the device as "Other (Custom name)" and name it (for example: One-Stop-Bot-Terra).
-5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
+5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby".
 
 ## Under development (in desc priority)
-- Deposit in SPEC-UST and MIR-UST Pool instead of selling until min price of SPEC, MIR, ANC is reached and then sell it (I think it gets to complicated...)
-- HTML Status Report (function is there, just not formatted properly)
+- Deposit in SPEC-UST and MIR-UST Pool instead of selling until min price of SPEC, MIR, ANC is reached and then sell it (I think it gets to complicated...).
+- HTML Status Report (function is there, just not formatted properly).
 - Run Mirror withdrawals before repay of Anchor Borrow to make use of that available aUST
-- Build a front end
+- Build a front end.
 
 ## Similar projects
 - https://github.com/unl1k3ly/AnchorHODL
