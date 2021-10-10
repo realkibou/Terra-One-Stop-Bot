@@ -6,8 +6,8 @@ Then, this bot is for you!
 Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra.
 
 I also included 2x Google Spreadsheet that should help you with the decision making what mAsset to pick and what minimum values to pick for the One-Stop-Bot to operate on:
-- Delta Neutral Simulation & Playground: `https://docs.google.com/spreadsheets/d/19WyuPtGz1SGJsCKZGskD7JAGAT9THUFy9b2GtbMR7JI` (make a copy and change the yellow filled fields to play on the sheet tab '0. Calc')
-- Decision Help Min Values: `https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M`
+- Delta Neutral Simulation & Playground: https://docs.google.com/spreadsheets/d/19WyuPtGz1SGJsCKZGskD7JAGAT9THUFy9b2GtbMR7JI (make a copy and change the yellow filled fields to play on the sheet tab '0. Calc')
+- Decision Help Min Values: https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M
 
 ## Thank you!
 If this bot is helpful to you and helps maximize your gainz, feel free to donate a bit to `terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg`. This will also keep the development going and the bot up-to-date. Thank you! :)
