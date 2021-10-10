@@ -69,7 +69,6 @@ class Contract_addresses:
                 'Terraswap MIR-UST Pair': 'terra1amv303y8kzxuegvurh0gug2xe9wkgj65enq2ux',
                 # Anchor
                 'bLunaHub': 'terra1mtwph2juhj0rvjz7dy92gvl6xvukaxu8rfv8ts',
-                'bLunaToken': 'terra1kc87mu460fwkqte29rquh4hc20m54fxwtsx7gp',
                 'bLunaReward': 'terra17yap3mhph35pcwvhza38c2lkj7gzywzy05h7l0',
                 'bLunaAirdrop': 'terra199t7hg7w5vymehhg834r6799pju2q3a0ya7ae9',
                 'mmInterestModel': 'terra1kq8zzq5hufas9t0kjsjc62t2kucfnx8txf547n',

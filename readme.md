@@ -5,6 +5,10 @@ Then, this bot is for you!
 
 Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra.
 
+I also included 2x Google Spreadsheet that should help you with the decision making what mAsset to pick and what minimum values to pick for the One-Stop-Bot to operate on:
+- Delta Neutral Simulation & Playground: `https://docs.google.com/spreadsheets/d/19WyuPtGz1SGJsCKZGskD7JAGAT9THUFy9b2GtbMR7JI` (make a copy and change the yellow filled fields to play on the sheet tab '0. Calc')
+- Decision Help Min Values: `https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M`
+
 ## Thank you!
 If this bot is helpful to you and helps maximize your gainz, feel free to donate a bit to `terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg`. This will also keep the development going and the bot up-to-date. Thank you! :)
 
@@ -137,7 +141,7 @@ To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.
 5. Copy the app password, it will be in a yellow box and looks like: "cjut fanq prdo diby"
 
 ## Under development (in desc priority)
-- Deposit in SPEC-UST and MIR-UST Pool instead of selling
+- Deposit in SPEC-UST and MIR-UST Pool instead of selling until min price of SPEC, MIR, ANC is reached and then sell it (I think it gets to complicated...)
 - HTML Status Report (function is there, just not formatted properly)
 - Run Mirror withdrawals before repay of Anchor Borrow to make use of that available aUST
 - Build a front end

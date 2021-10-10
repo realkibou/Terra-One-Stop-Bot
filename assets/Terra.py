@@ -69,7 +69,7 @@ class Terra:
         self.MIR_token = self.contact_addresses['MIR']
         self.ANC_token = self.contact_addresses['ANC']
         self.bETH_token = self.contact_addresses['bETH']
-        self.bLuna_token = self.contact_addresses['bLuna']
+        self.bLuna_token = self.contact_addresses['bLUNA']
         self.mAAPL_token = self.contact_addresses['mAAPL']
 
         self.failed_tx_hash = self.contact_addresses['failed_tx_hash']
