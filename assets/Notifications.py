@@ -7,6 +7,7 @@ import os
 # from email.mime.text import MIMEText
 
 class Notifications:
+    if config.Debug_mode: print(f'Notifications Class loaded.')
     def slack_webhook(msg):
         slack_data = {
             "blocks": [
@@ -30,7 +31,7 @@ class Notifications:
                     'Request to slack returned an error %s, the response is:\n%s'
                     % (response.status_code, response.text)
                 )
-        except Exception:
+        except Exception: # Todo
             pass
 
 
@@ -47,7 +48,7 @@ class Notifications:
                     'Request to slack returned an error %s, the response is:\n%s'
                     % (response.status_code, response.text)
                 )
-        except Exception:
+        except Exception: # Todo
             pass
 
 
@@ -58,7 +59,7 @@ class Notifications:
                 txt_file.write(msg)
             os.system('cat One-stop-bot-email-temp-body.txt | mail -s "' +
                     config.Email_subject + config.Email_address)
-        except Exception:
+        except Exception: # Todo
             pass
 
     def gmail_notification(subject, message):

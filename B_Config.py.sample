@@ -7,27 +7,41 @@ NETWORK = 'TESTNET' # TESTNET or MAINNET
 mnemonic = os.environ.get('MNEMONIC', '')
 
 # Read me: When to claim, sell, unstake? - What is the right min_total_value?
-# Check the Excel file attached in this repository
+# Check this link: https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M
+# Don't know which mAsset to pick, check this link: https://docs.google.com/spreadsheets/d/19WyuPtGz1SGJsCKZGskD7JAGAT9THUFy9b2GtbMR7JI
 
-# Anchor Earn roundtrip break-even for 1 day is about 9000 UST.
-
-# CLAIM & SELL MIR, SPEC. ANC REWARDS
+# MIN PRICES AND VALUES FOR FUTHER FUNCTIONS TO WORK WITH
 # Important: min_price AND min_total_value must both be fulfilled for your token to be sold.
+
+MIR_min_price = 3  # Minimum price acceptable to sell in UST https://coinhall.org/charts/terra/terra1amv303y8kzxuegvurh0gug2xe9wkgj65enq2ux
+MIR_min_total_value = 96 # Minimum amount (qty * price in UST) to claim and sell/deposit MIR tokens.
+
+SPEC_min_price = 7 # https://coinhall.org/charts/terra/terra1tn8ejzw8kpuc87nu42f6qeyen4c7qy35tl8t20
+SPEC_min_total_value = 138
+
+ANC_min_price = 4 # https://coinhall.org/charts/terra/terra1gm5p3ner9x9xpwugn9sp6gvhd0lwrtkyrecdn3
+ANC_min_total_value = 111
+
+# WITHDRAWAL MIR, SPEC, ANC, UST FROM LIQUIDITY POOLS AND THEN SELL
+MIR_withdraw_and_sell_if_min_price_is_reached = False
+SPEC_withdraw_and_sell_if_min_price_is_reached = False
+ANC_withdraw_and_sell_if_min_price_is_reached = False
+
+# CLAIM MIR, SPEC, ANC REWARDS AND SELL THEM IMMEDIATELY
 MIR_claim_and_sell_token = False
-MIR_min_price = 4  # Min price acceptable to sell in UST
-MIR_min_total_value = 193 # Min amount (qty * price in UST) to sell MIR tokens.
-
 SPEC_claim_and_sell_token = False
-SPEC_min_price = 9
-SPEC_min_total_value = 224
-
 ANC_claim_and_sell_token = False
-ANC_min_price = 4
-ANC_min_total_value = 278
+
+# DEPOSIT MIR, SPEC, ANC REWARDS INTO LIQUIDITY POOLS
+# min_price as well as min_total_value from the previous section will be both considered.
+MIR_claim_and_deposit_in_LP = False
+SPEC_claim_and_deposit_in_LP = False
+ANC_claim_and_deposit_in_LP = False
+Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP = False
 
 # MIRROR: CLAIMING UNLOCKED UST
 Mirror_claim_unlocked_UST = False
-Mirror_min_amount_UST_to_claim = 193
+Mirror_min_amount_UST_to_claim = 96
 
 # ANCHOR BORROW: MAINTAIN LTV RATIO / REPAY BORROWED UST IF REQUIRED
 # READ the example carefully, as Anchor works opposite for Mirror's liquidation ratio's logic.
@@ -50,8 +64,9 @@ Anchor_min_borrow_limit = 295 # Set a minimum limit; otherwise the script may bo
 Anchor_borrow_cooldown = 1 # Cooldown in days after collateral has been withdrawn. Example: 3 means it happens only once every 3 days.
 
 # ANCHOR EARN: DEPOSIT UST FROM SELLING ANC, MIR, SPEC
-Anchor_enable_deposit_borrowed_UST = False
-Anchor_min_deposit_amount = 148
+Anchor_Earn_enable_deposit_UST = False
+Anchor_Earn_min_deposit_amount = 148
+Anchor_Earn_min_balance_to_keep_in_wallet = 150 # This this bot also deposits token in LP, you should have a UST balance in your wallet.
 
 # MIRROR: MAINTAIN COLLATERAL RATIO / DEPOSIT COLLATERAL IF REQUIRED
 # Example:  Let's say the minimum ratio for the given mAsset on Mirror is 150% or 1.5.
@@ -78,13 +93,12 @@ Send_me_a_report = True # Logs summary of what has happened, if something has ha
 Notify_Slack = False
 Notify_Telegram = False
 Notify_Gmail = False
-Send_me_a_status_update = False # Even if nothing is done by the script, you can receive a status update with your key infos your Anchor / Positions.
+Send_me_a_status_update = True # Even if nothing is done by the script, you can receive a status update with your key infos your Anchor / Positions.
 Status_update_frequency = 24 # In hours. 24 means once per 24h.
 Status_update_time = '14:00' # Time to send you the status_update based on server time
 
-# OTHER
+# SCHEDULER
 Run_interval_for_Scheduler = 5 # in minutes. 5 means every 5 minutes
-Safety_multiple_on_transaction_fees = 1 # Multiplier for Anchor Borrow, Repay, Deposit. So you will have a bit of UST in your wallet left for future transactions.
 
 # DEBUGGING
 Debug_mode = True  # If False, default.log will include almost everything. If False only WARNINGs and ERRORs will be logged.
@@ -93,6 +107,9 @@ Return_failed_tx = False # If Disable_all_transaction_def is False, you can retu
 
 # LOGGING
 Logging_detail = 'simple'  # detailed, moderate, simple. Recommended: simple.
+
+# OTHER
+Safety_multiple_on_transaction_fees = 3 # Multiplier for Anchor Borrow, Repay, Deposit. So you will have a bit of UST in your wallet left for future transactions.
 
 # NOTIFICATION SETUP
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', 'Your Bot Token here') # See readme.md how to get this.
@@ -104,7 +121,3 @@ GMAIL_ACCOUNT = 'Your full Gmail address here' # Your Gmail address you use for 
 EMAIL_SUBJECT = 'Terra One-Stop-Bot'
 EMAIL_FROM = GMAIL_ACCOUNT # Normally the same as your main Gmail address.
 EMAIL_TO = GMAIL_ACCOUNT # Normally the same as your main Gmail address.
-
-
-
-

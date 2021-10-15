@@ -64,6 +64,7 @@ LOGGING_CONFIG = {
 }
 
 class Logger:
+    if config.Debug_mode: print(f'Logger Class loaded.')
     def __init__(self):
         if not os.path.exists('./logs'):
             os.makedirs('logs')

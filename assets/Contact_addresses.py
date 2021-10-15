@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+# https://assets.terra.money/cw20/tokens.json
+# https://assets.terra.money/cw20/contracts.json
+
 class Contract_addresses:
     def contact_addresses(network):
         if network == 'MAINNET':
@@ -12,12 +15,14 @@ class Contract_addresses:
                 'Gov': 'terra1wh39swv7nq36pnefnupttm2nr96kz7jjddyt2x',
                 'Mint': 'terra1wfz7h3aqf4cjmjcvc6s8lxdhh7k30nkczyf0mj',
                 'Oracle': 'terra1t6xe0txzywdg85n6k8c960cuwgh6l8esw6lau9',
-                'Staking': 'terra17f7zu97865jmknk7p2glqvxzhduk78772ezac5',
+                'MirrorStaking': 'terra17f7zu97865jmknk7p2glqvxzhduk78772ezac5',
                 'Airdrop': 'terra1kalp2knjm4cs3f59ukr4hdhuuncp648eqrgshw',
                 'Limit Order': 'terra1zpr8tq3ts96mthcdkukmqq4y9lhw0ycevsnw89',
                 'Collateral Oracle': 'terra1pmlh0j5gpzh2wsmyd3cuk39cgh2gfwk6h5wy9j',
                 'Lock': 'terra169urmlm8wcltyjsrn7gedheh7dker69ujmerv2',
                 'Short Reward': 'terra16mlzdwqq5qs6a23250lq0fftke8v80sapc5kye',
+                'Mirror MIR-UST Pair': 'terra1amv303y8kzxuegvurh0gug2xe9wkgj65enq2ux',
+                'Mirror MIR-UST LP': 'terra17gjf2zehfvnyjtdgua9p9ygquk6gukxe7ucgwh',
                 # mAssets https://docs.mirror.finance/networks#terra
                 'ANC' : 'terra14z56l0fp2lsf86zy3hty2z47ezkhnthtr9yq76',
                 'aUST' : 'terra1hzh9vpxhsk8253se0vv5jj6etdvxu3nv8z07zu',
@@ -64,9 +69,9 @@ class Contract_addresses:
                 'specFarm': 'terra17hjvrkcwn3jk2qf69s5ldxx5rjccchu35assga',
                 'pylonFarm': 'terra1r3675psl7s2fe0sfh0vut5z4hrywgyyfdrzg95',
                 'specgov': 'terra1dpe4fmcz2jqk6t50plw0gqa2q3he2tj6wex5cl',
-                # TerraSwap
+                'SpectrumStaking' : 'terra1fxwelge6mf5l6z0rjpylzcfq9w9tw2q7tewaf5',
                 'Spectrum SPEC-UST Pair': 'terra1tn8ejzw8kpuc87nu42f6qeyen4c7qy35tl8t20',
-                'Terraswap MIR-UST Pair': 'terra1amv303y8kzxuegvurh0gug2xe9wkgj65enq2ux',
+                'Spectrum SPEC-UST LP' : 'terra1y9kxxm97vu4ex3uy0rgdr5h2vt7aze5sqx7jyl',
                 # Anchor
                 'bLunaHub': 'terra1mtwph2juhj0rvjz7dy92gvl6xvukaxu8rfv8ts',
                 'bLunaReward': 'terra17yap3mhph35pcwvhza38c2lkj7gzywzy05h7l0',
@@ -105,17 +110,20 @@ class Contract_addresses:
                 'Gov': 'terra12r5ghc6ppewcdcs3hkewrz24ey6xl7mmpk478s',
                 'Mint': 'terra1s9ehcjv0dqj2gsl72xrpp0ga5fql7fj7y3kq3w',
                 'Oracle': 'terra1uvxhec74deupp47enh7z5pk55f3cvcz8nj4ww9',
-                'Staking': 'terra1a06dgl27rhujjphsn4drl242ufws267qxypptx',
+                'MirrorStaking': 'terra1a06dgl27rhujjphsn4drl242ufws267qxypptx',
                 'Airdrop': 'terra1p6nvyw7vz3fgpy4nyh3q3vc09e65sr97ejxn2p',
                 'Limit Order': 'terra1vc4ch0z3n6c23f9uywzy5yqaj2gmpnam8qgge7',
                 'Collateral Oracle': 'terra1q3ls6u2glsazdeu7dxggk8d04elnvmsg0ung6n',
                 'Lock': 'terra1pcxghd4dyf950mcs0kmlp7lvnrjsnl6qlfldwj',
+                'Mirror MIR-UST Pair': 'terra1cz6qp8lfwht83fh9xm9n94kj04qc35ulga5dl0',
+                'Mirror MIR-UST LP': 'terra1zrryfhlrpg49quz37u90ck6f396l4xdjs5s08j',
                 # mAssets https://docs.mirror.finance/networks#terra
                 'SPEC': 'terra1kvsxd94ue6f4rtchv2l6me5k07uh26s7637cza',
                 'MIR': 'terra10llyp6v3j3her8u3ce66ragytu45kcmd9asj3u',
                 'ANC': 'terra1747mad58h0w4y589y3sk84r5efqdev9q4r02pc',
+                'aUST' : 'terra1ajt556dpzvjwl0kl5tzku3fc3p3knkg9mkv8jl',
                 'bETH': 'terra19mkj9nec6e3y5754tlnuz4vem7lzh4n0lc2s3l',
-                'bLuna': 'terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x',
+                'bLUNA': 'terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x',
                 'mAAPL': 'terra16vfxm98rxlc8erj4g0sj5932dvylgmdufnugk0',
                 'mDOT': 'terra1fs6c6y65c65kkjanjwvmnrfvnm2s58ph88t9ky',
                 'mGOOGL': 'terra1qg9ugndl25567u03jrr79xur2yk9d632fke3h2',
@@ -141,9 +149,9 @@ class Contract_addresses:
                 'specFarm': 'terra1cedx8gpvu7c4vzfadwmf3pewg2030fqgw4q3dl',
                 'pylonFarm': 'terra1hgjp2yjqe7ngzsx283tm7ch8xcsvk5c8mdj2tw',
                 'specgov': 'terra1x3l2tkkwzzr0qsnrpy3lf2cm005zxv7pun26x4',
-                # TerraSwap
+                'SpectrumStaking' : 'terra15nwqmmmza9y643apneg0ddwt0ekk38qdevnnjt',
                 'Spectrum SPEC-UST Pair': 'terra15cjce08zcmempedxwtce2y44y2ayup8gww3txr',
-                'Terraswap MIR-UST Pair': 'terra1cz6qp8lfwht83fh9xm9n94kj04qc35ulga5dl0',
+                'Spectrum SPEC-UST LP' : 'terra1ntt4mdhr9lukayenntgltqppw4yy6hts7wr67d',
                 # Anchor
                 "bLunaHub": "terra1fflas6wv4snv8lsda9knvq2w0cyt493r8puh2e",
                 "bLunaToken": "terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x",
