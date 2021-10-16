@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 # Terra SDK
-import re
 from terra_sdk.core.coins import Coin
 from terra_sdk.core.numeric import Dec
 from terra_sdk.exceptions import LCDResponseError
@@ -13,10 +12,9 @@ import B_Config as config
  
 # Other imports
 from datetime import datetime
-from time import mktime
-import time
-import requests
-import re
+from time import mktime, sleep
+from requests import get
+from re import search
 
 account_address = Terra.account_address
 
@@ -26,6 +24,27 @@ class Queries:
 
     def __init__(self):
         self.all_rates = self.get_all_rates()
+
+        
+    def get_all_rates(self):
+
+        all_rates:dict
+        all_rates = {}
+        
+        all_rates['LUNA'] = Dec(str(Terra.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))
+
+        query = {
+            "epoch_state": {},
+        }
+        query_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query)
+        
+        all_rates['aUST'] = Dec(query_result['exchange_rate']) * 1000000
+
+        # Update ANC, MIR, SPEC as those prices are critical to be up-to-date
+        all_rates['MIR'] = Dec(self.get_swap_price(Terra.Mirror_MIR_UST_Pair) * 1000000)
+        all_rates['SPEC'] = Dec(self.get_swap_price(Terra.Spectrum_SPEC_UST_Pair) * 1000000)
+        all_rates['ANC'] = Dec(self.get_swap_price(Terra.Terraswap_ANC_UST_Pair) * 1000000)
+        return all_rates
 
     def get_fee_estimation(self):
 
@@ -43,9 +62,7 @@ class Queries:
         }
 
         query_result = Terra.terra.wasm.contract_query(token_UST_pair_address, query)
-
         for asset in query_result['assets']:
-            
             # If ['info']['token'] does not exists, the current asset is uusd
             if asset['info'].get('token') is None:
                 UST_in_pool = Dec(asset['amount'])
@@ -53,42 +70,10 @@ class Queries:
             # Otherwise it is the token
             else:
                 token_in_pool = Dec(asset['amount'])
-
         Swap_price = UST_in_pool / token_in_pool
 
         return Dec(Swap_price)
 
-    def get_all_rates(self):
-
-        all_rates:dict
-        all_rates = {}
-
-        if config.NETWORK == 'MAINNET':
-            extraterrestrial_response = requests.get('https://api.extraterrestrial.money/v1/api/prices').json()
-            extraterrestrial_response = {**extraterrestrial_response.pop('prices'), **extraterrestrial_response}
-            # Those prices may be a bit out-dated 8.8451392 vs 8.79209 Delta of 0.6%
-            # Therefore this on is only for information. No swaps are evaluated based on this rates.
-
-            # Rewrite dictionary, for example all_rates['ANC']['price'] to just all_rates['ANC']
-            for k, v in extraterrestrial_response.items():
-                all_rates[k] = Dec(v['price'] * 1000000)
-        
-        else:
-            # The rates above are not availabe for the TESTNET, therefore     
-            all_rates['LUNA'] = Dec(str(Terra.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))
-
-            query = {
-                "epoch_state": {},
-            }
-            query_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query)
-            
-            all_rates['aUST'] = Dec(query_result['exchange_rate']) * 1000000
-
-        # Update ANC, MIR, SPEC as those prices are critical to be up-to-date
-        all_rates['MIR'] = Dec(self.get_swap_price(Terra.Mirror_MIR_UST_Pair) * 1000000)
-        all_rates['SPEC'] = Dec(self.get_swap_price(Terra.Spectrum_SPEC_UST_Pair) * 1000000)
-        all_rates['ANC'] = Dec(self.get_swap_price(Terra.Terraswap_ANC_UST_Pair) * 1000000)
-        return all_rates
 
 
     def get_luna_col_multiplier(self):
@@ -572,7 +557,7 @@ class Queries:
 
     def get_status_of_tx(self, tx_hash, retry=0):
 
-        if re.search("[A-F0-9]{64}", tx_hash) is None:
+        if search("[A-F0-9]{64}", tx_hash) is None:
             return tx_hash
 
         if config.Disable_all_transaction_defs:
@@ -581,7 +566,7 @@ class Queries:
             else:
                 return True
 
-        time.sleep(5)
+        sleep(5)
 
         try:
             status = Terra.terra.tx.tx_info(tx_hash)

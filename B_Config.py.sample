@@ -93,6 +93,7 @@ Send_me_a_report = True # Logs summary of what has happened, if something has ha
 Notify_Slack = False
 Notify_Telegram = False
 Notify_Gmail = False
+Email_format = 'TEXT' # Define to receive the report and status update in TEXT or HTML
 Send_me_a_status_update = True # Even if nothing is done by the script, you can receive a status update with your key infos your Anchor / Positions.
 Status_update_frequency = 24 # In hours. 24 means once per 24h.
 Status_update_time = '14:00' # Time to send you the status_update based on server time

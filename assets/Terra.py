@@ -1,32 +1,32 @@
 #!/usr/bin/python3
 
 # Terra SDK
+from requests.exceptions import ConnectTimeout
 from terra_sdk.client.lcd import LCDClient
 from terra_sdk.key.mnemonic import MnemonicKey
-from terra_sdk.exceptions import LCDResponseError
 
 # Other assets
 from assets.Contact_addresses import Contract_addresses
 
 # from assets.Queries import Queries
 import B_Config as config
-import requests
+from requests import get, ConnectionError, ConnectTimeout
 
 def get_terra_gas_prices(retry=0):
    
     try:
-        r = requests.get("https://fcd.terra.dev/v1/txs/gas_prices")
+        r = get("https://fcd.terra.dev/v1/txs/gas_prices")
         r.raise_for_status()
         if r.status_code == 200:
             return r.json()
     
-    except requests.ConnectionError as err:
+    except ConnectionError as err:
         if retry < 1:
             retry +=1
             get_terra_gas_prices(retry)
         else:
             raise err
-    except requests.ConnectTimeout as err:
+    except ConnectTimeout as err:
         if retry < 1:
             retry +=1
             get_terra_gas_prices(retry)

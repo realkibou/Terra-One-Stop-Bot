@@ -90,6 +90,7 @@ I made the One-Stop-Bot as much configureable as possible. You can configure wha
     * `Notify_Slack` True/False notifications to be received on Slack
     * `Notify_Telegram` True/False notifications to be received on Telegram
     * `Notify_Gmail` True/False notifications to be send through Gmail to any email
+    * `Email_format` Define to receive the report and status update in TEXT or HTML
     * `Send_me_a_status_update` True/False if you want to receive a status update anyway depending on your `Status_update_frequency` 
     * `Status_update_frequency` Define in what intervals (hours) you want to receive a status update
     * `Status_update_time` Define at what time you want to receive the status update

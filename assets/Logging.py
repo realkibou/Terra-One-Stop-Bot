@@ -4,9 +4,10 @@
 import B_Config as config
 
 # Other imports
-import os
-import logging.config
-import io
+from os import makedirs, path
+from io import StringIO
+from logging import getLogger, StreamHandler
+from logging.config import dictConfig
 
 if config.Debug_mode:
     level = 'DEBUG'
@@ -66,14 +67,14 @@ LOGGING_CONFIG = {
 class Logger:
     if config.Debug_mode: print(f'Logger Class loaded.')
     def __init__(self):
-        if not os.path.exists('./logs'):
-            os.makedirs('logs')
+        if not path.exists('./logs'):
+            makedirs('logs')
 
-        logging.config.dictConfig(LOGGING_CONFIG)
-        self.default_logger = logging.getLogger('default_logger')
-        self.report_logger = logging.getLogger('report_logger')
+        dictConfig(LOGGING_CONFIG)
+        self.default_logger = getLogger('default_logger')
+        self.report_logger = getLogger('report_logger')
 
-        self.report_array = io.StringIO()
-        self.report_handler = logging.StreamHandler(self.report_array)
+        self.report_array = StringIO()
+        self.report_handler = StreamHandler(self.report_array)
         self.report_logger.addHandler(self.report_handler)
         self.default_logger.addHandler(self.report_handler)

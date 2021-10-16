@@ -18,7 +18,6 @@
 
 # Terra SDK
 from terra_sdk.core.numeric import Dec
-from terra_sdk.client.lcd import wallet
 
 # Other assets
 from assets.Notifications import Notifications
@@ -31,30 +30,15 @@ import B_Config as config
  
 # Other imports
 from datetime import datetime, timedelta
-import time
+from time import time
 
-#------------------------------
-#---------- INITIATE ----------
-#------------------------------
+Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify()
+default_logger, report_logger, report_array = Logger_class.default_logger, Logger_class.report_logger, Logger_class.report_array
 
-Transaction_class = Transaction()
-Queries_class = Queries()
-Cooldown_class = Cooldown()
-Logger_class = Logger()
-Terra_class = Terra
-Prettify_class = Prettify()
+def keep_safe():
 
-default_logger = Logger_class.default_logger
-report_logger = Logger_class.report_logger
-report_array = Logger_class.report_array
-
-
-#-------------------------------
-#---------- MAIN DEF -----------
-#-------------------------------
-def keep_safe():    
     if config.Debug_mode: print(f'keep_safe() started.')
-    begin_time = time.time()
+    begin_time = time()
     wallet_balance = Queries_class.get_wallet_balances()
     general_estimated_tx_fee = Dec(Queries_class.get_fee_estimation())
 
@@ -72,11 +56,7 @@ def keep_safe():
     wallet_balance = Queries_class.get_wallet_balances()
     all_rates = Queries_class.get_all_rates()
     
-    action_dict = {
-        'MIR' : 'none',
-        'SPEC' : 'none',
-        'ANC' : 'none',
-    }
+    action_dict = {'MIR' : 'none','SPEC' : 'none','ANC' : 'none', }
     
     wallet_balance_before = Queries_class.get_wallet_balances()
     default_logger.debug(f'Wallet_balance_before: {Prettify_class.dict_value_convert_dec_to_float(wallet_balance_before, False)}')
@@ -957,36 +937,7 @@ def keep_safe():
         if cooldowns.get('Staus_Report_cooldown') is None or cooldowns['Staus_Report_cooldown'] <= datetime_now:
             if datetime.strptime(f'{datetime_now:%H:%M}', '%H:%M') > datetime.strptime(config.Status_update_time, '%H:%M'):
 
-                status_update = ""
-
-                if Anchor_borrow_info["loan_amount"] > 0:
-                    status_update += f'-----------------------------------\n'
-                    status_update += f'------------- ANCHOR --------------\n'
-                    status_update += f'-----------------------------------\n'
-                    status_update += f'bETH collateral: {(Anchor_borrow_info["amount_bETH_collateral"].__float__()/1000000):.3f} bETH\n'
-                    status_update += f'bLuna collateral: {(Anchor_borrow_info["amount_bLuna_collateral"].__float__()/1000000):.0f} bLuna\n'
-                    status_update += f'Total collateral: {(Anchor_borrow_info["total_collateral_value"].__float__()/1000000):.0f} UST\n'
-                    status_update += f'Loan amount: {(Anchor_borrow_info["loan_amount"].__float__()/1000000):.0f} UST\n'
-                    status_update += f'Borrow limit: {(Anchor_borrow_info["borrow_limit"].__float__()/1000000):.0f} UST\n'
-                    status_update += f'Current LTV: {Anchor_borrow_info["cur_col_ratio"].__float__()*100:.0f} %\n'
-                    status_update += f'If all your collateral loses {Anchor_borrow_info["collateral_loss_to_liq"].__float__()*100:.0f}% you would get liquidated.\n'
-                                                    
-                if len(Mirror_position_info) > 0:
-                    
-                    status_update += f'-----------------------------------\n'
-                    status_update += f'------------- MIRROR --------------\n'
-                    status_update += f'-----------------------------------\n'
-                    
-                    for position in Mirror_position_info:
-                        
-                        status_update += f'Position: {position["position_idx"]} - {position["mAsset_symbol"]}\n'
-                        status_update += f'Collateral value: {(position["collateral_amount_in_kind"].__float__()/1000000):.0f} {position["collateral_token_denom"]}\n'
-                        status_update += f'Collateral value: {(position["collateral_amount_in_ust"].__float__()/1000000):.0f} UST\n'
-                        status_update += f'Shorted Value in UST: {(position["shorted_asset_amount"].__float__()/1000000):.0f} UST\n'
-                        status_update += f'Current LTV: {position["cur_col_ratio"].__float__():.0f}00 %\n'
-                        status_update += f'If all your collateral loses {(position["collateral_loss_to_liq"].__float__()*100):.0f}%\n'
-                        status_update += f'or if {position["mAsset_symbol"]} raises by {(position["shorted_mAsset_gain_to_liq"].__float__()*100):.0f}% you would get liquidated.\n'
-                        status_update += f'\n'
+                status_update = Prettify_class.generate_status_report(Anchor_borrow_info, Mirror_position_info)
 
                 # Cooldown: Write date of today into cooldown dictionary
                 cooldowns['Staus_Report_cooldown'] = datetime_now + timedelta(hours=config.Status_update_frequency)
@@ -1016,8 +967,10 @@ def keep_safe():
     report_content = report_array.getvalue()
 
     # Notify user about something that has been done
+    # Will not send if Debug_mode enabled
     if config.Send_me_a_report \
-        and len(report_content) > 0:
+        and len(report_content) > 0 \
+        and not config.Debug_mode:
         if config.Notify_Slack:
             Notifications.slack_webhook(report_content)
         if config.Notify_Telegram:
@@ -1034,8 +987,8 @@ def keep_safe():
         if config.Notify_Gmail:
             Notifications.gmail_notification(f'{config.EMAIL_SUBJECT} Status:', status_update)
 
-    default_logger.debug(f'{datetime.now():%H:%M} [Script] Ran successful. Runtime: {(time.time() - begin_time):.0f}s')
-    print(f'[Script] At {datetime.now():%H:%M}, ran successfully. Runtime: {(time.time() - begin_time):.0f}s')
+    default_logger.debug(f'{datetime.now():%H:%M} [Script] Ran successful. Runtime: {(time() - begin_time):.0f}s')
+    print(f'[Script] At {datetime.now():%H:%M}, ran successfully. Runtime: {(time() - begin_time):.0f}s')
     return True
 
 if __name__ == '__main__':
