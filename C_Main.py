@@ -32,7 +32,7 @@ import B_Config as config
 from datetime import datetime, timedelta
 from time import time
 
-Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify()
+Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class, Notifications_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify(), Notifications
 default_logger, report_logger, report_array = Logger_class.default_logger, Logger_class.report_logger, Logger_class.report_array
 
 def keep_safe():
@@ -937,7 +937,7 @@ def keep_safe():
         if cooldowns.get('Staus_Report_cooldown') is None or cooldowns['Staus_Report_cooldown'] <= datetime_now:
             if datetime.strptime(f'{datetime_now:%H:%M}', '%H:%M') > datetime.strptime(config.Status_update_time, '%H:%M'):
 
-                status_update = Prettify_class.generate_status_report(Anchor_borrow_info, Mirror_position_info)
+                status_update = Notifications_class.generate_status_report(Anchor_borrow_info, Mirror_position_info)
 
                 # Cooldown: Write date of today into cooldown dictionary
                 cooldowns['Staus_Report_cooldown'] = datetime_now + timedelta(hours=config.Status_update_frequency)
@@ -966,26 +966,29 @@ def keep_safe():
     # Write all from current report_logger to array
     report_content = report_array.getvalue()
 
+    if config.Email_format.lower() == 'html':
+        report_content = Notifications_class.report_content_to_HTML(report_content)
+
     # Notify user about something that has been done
     # Will not send if Debug_mode enabled
     if config.Send_me_a_report \
         and len(report_content) > 0 \
         and not config.Debug_mode:
         if config.Notify_Slack:
-            Notifications.slack_webhook(report_content)
+            Notifications_class.slack_webhook(report_content)
         if config.Notify_Telegram:
-            Notifications.telegram_notification(report_content)
+            Notifications_class.telegram_notification(report_content)
         if config.Notify_Gmail:
-            Notifications.gmail_notification('TEXT', f'{config.EMAIL_SUBJECT} Report:', report_content)
+            Notifications_class.gmail_notification('TEXT', f'{config.EMAIL_SUBJECT} Report:', report_content)
     
     # Notify user about status report
     if status_update != False:
         if config.Notify_Slack:
-            Notifications.slack_webhook(status_update)
+            Notifications_class.slack_webhook(status_update)
         if config.Notify_Telegram:
-            Notifications.telegram_notification(status_update)
+            Notifications_class.telegram_notification(status_update)
         if config.Notify_Gmail:
-            Notifications.gmail_notification(config.Email_format, f'{config.EMAIL_SUBJECT} Status:', status_update)
+            Notifications_class.gmail_notification(config.Email_format, f'{config.EMAIL_SUBJECT} Status:', status_update)
 
     default_logger.debug(f'{datetime.now():%H:%M} [Script] Ran successful. Runtime: {(time() - begin_time):.0f}s')
     print(f'[Script] At {datetime.now():%H:%M}, ran successfully. Runtime: {(time() - begin_time):.0f}s')
