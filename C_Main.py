@@ -976,7 +976,7 @@ def keep_safe():
         if config.Notify_Telegram:
             Notifications.telegram_notification(report_content)
         if config.Notify_Gmail:
-            Notifications.gmail_notification(f'{config.EMAIL_SUBJECT} Report:', report_content)
+            Notifications.gmail_notification('TEXT', f'{config.EMAIL_SUBJECT} Report:', report_content)
     
     # Notify user about status report
     if status_update != False:
@@ -985,7 +985,7 @@ def keep_safe():
         if config.Notify_Telegram:
             Notifications.telegram_notification(status_update)
         if config.Notify_Gmail:
-            Notifications.gmail_notification(f'{config.EMAIL_SUBJECT} Status:', status_update)
+            Notifications.gmail_notification(config.Email_format, f'{config.EMAIL_SUBJECT} Status:', status_update)
 
     default_logger.debug(f'{datetime.now():%H:%M} [Script] Ran successful. Runtime: {(time() - begin_time):.0f}s')
     print(f'[Script] At {datetime.now():%H:%M}, ran successfully. Runtime: {(time() - begin_time):.0f}s')

@@ -62,7 +62,7 @@ class Notifications:
         except Exception: # Todo
             pass
 
-    def gmail_notification(subject:str, message:str):
+    def gmail_notification(format:str, subject:str, message:str):
 
         import smtplib
         from email.message import EmailMessage
@@ -71,7 +71,7 @@ class Notifications:
         server.starttls()
         server.login(config.GMAIL_ACCOUNT, config.GMAIL_APP_PASSWORD)
 
-        if config.Email_format == 'HTML':
+        if format == 'HTML':
             msg = MIMEText(message, "html")
         else:
             msg = EmailMessage()
