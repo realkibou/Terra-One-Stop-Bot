@@ -4,7 +4,9 @@ import os
 
 # SETUP
 NETWORK = 'TESTNET' # TESTNET or MAINNET
-mnemonic = os.environ.get('MNEMONIC', '')
+
+# Replace the seed phrase with yours
+mnemonic = os.environ.get('MNEMONIC', 'doorpost lankiness impurity cottage dust spectacle matador annuity obsessive swimwear coaster proclaim frosting radiance grandpa worrier undermost encourage fall lather fake phrase for real')
 
 # Read me: When to claim, sell, unstake? - What is the right min_total_value?
 # Check this link: https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M

@@ -29,7 +29,7 @@ from assets.Logging import Logger
 import B_Config as config
  
 # Other imports
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from time import time
 
 Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class, Notifications_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify(), Notifications
@@ -59,7 +59,7 @@ def keep_safe():
     action_dict = {'MIR' : 'none','SPEC' : 'none','ANC' : 'none', }
     
     wallet_balance_before = Queries_class.get_wallet_balances()
-    default_logger.debug(f'Wallet_balance_before: {Prettify_class.dict_value_convert_dec_to_float(wallet_balance_before, False)}')
+    default_logger.debug(f'Wallet_balance_before: {Prettify_class.dict_value_convert_dec_to_float(wallet_balance_before, True)}')
 
     # default_logger.debug(f'------------------------------------------\n'
     #                     f'-------- WITHDRAW FROM LP SECTION --------\n'
@@ -940,8 +940,8 @@ def keep_safe():
                 status_update = Notifications_class.generate_status_report(Anchor_borrow_info, Mirror_position_info)
 
                 # Cooldown: Write date of today into cooldown dictionary
-                cooldowns['Staus_Report_cooldown'] = datetime_now + timedelta(hours=config.Status_update_frequency)
-                report_logger.info(f'[Status Update] Cooldown limit has been activated. Next Status Report will be send on {(datetime_now + timedelta(hours=config.Status_update_frequency)):%Y-%m-%d %H:%M}')
+                cooldowns['Staus_Report_cooldown'] = datetime.strptime(f'{date.today()} {config.Status_update_time}', '%Y-%m-%d %H:%M') + timedelta(hours=config.Status_update_frequency)
+                report_logger.info(f'[Status Update] Cooldown limit has been activated. Next Status Report will be send on {(datetime.strptime(f"{date.today()} {config.Status_update_time}", "%Y-%m-%d %H:%M") + timedelta(hours=config.Status_update_frequency)):%Y-%m-%d %H:%M}')
             else:
                 default_logger.debug(f'[Status Update] Not sent as we are before your desired time ({config.Status_update_time}).')
         else:
