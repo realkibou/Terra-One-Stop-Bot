@@ -32,7 +32,7 @@ import B_Config as config
 from datetime import datetime, timedelta, date
 from time import time
 
-Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class, Notifications_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify(), Notifications
+Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class, Notifications_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify(), Notifications()
 default_logger, report_logger, report_array = Logger_class.default_logger, Logger_class.report_logger, Logger_class.report_array
 
 def keep_safe():
@@ -930,18 +930,31 @@ def keep_safe():
     #                         f'[CONFIG] Mirror_enable_withdraw_collateral is set to ({config.Mirror_enable_withdraw_collateral})')
 
     # default_logger.debug(f'\n-----------------------------------------\n'
-    #                     f'---------- BUREAUCRACY SECTION ----------\n'
+    #                     f'----------- REPORTING SECTION -----------\n'
     #                     f'-----------------------------------------\n')
 
     if config.Send_me_a_status_update:
         if cooldowns.get('Staus_Report_cooldown') is None or cooldowns['Staus_Report_cooldown'] <= datetime_now:
             if datetime.strptime(f'{datetime_now:%H:%M}', '%H:%M') > datetime.strptime(config.Status_update_time, '%H:%M'):
 
-                status_update = Notifications_class.generate_status_report(Anchor_borrow_info, Mirror_position_info)
+                status_update = Notifications_class.generate_status_report_html('text', Anchor_borrow_info, Mirror_position_info)
+                # Notify user about status report
+                if config.Notify_Slack:
+                    Notifications_class.slack_webhook(status_update)
+                if config.Notify_Telegram:
+                    Notifications_class.telegram_notification(status_update)
+                if config.Notify_Gmail:
+                    Notifications_class.gmail_notification(
+                        config.Email_format,
+                        f'{config.EMAIL_SUBJECT} Status:',
+                        Notifications_class.generate_status_report_html(
+                            config.Email_format,
+                            Anchor_borrow_info,
+                            Mirror_position_info))
 
                 # Cooldown: Write date of today into cooldown dictionary
                 cooldowns['Staus_Report_cooldown'] = datetime.strptime(f'{date.today()} {config.Status_update_time}', '%Y-%m-%d %H:%M') + timedelta(hours=config.Status_update_frequency)
-                report_logger.info(f'[Status Update] Cooldown limit has been activated. Next Status Report will be send on {(datetime.strptime(f"{date.today()} {config.Status_update_time}", "%Y-%m-%d %H:%M") + timedelta(hours=config.Status_update_frequency)):%Y-%m-%d %H:%M}')
+                report_logger.info(f'[Status Update] Cooldown limit has been activated. Next Status Report will be send on {(datetime.strptime(f"{date.today()} {config.Status_update_time}", "%Y-%m-%d %H:%M") + timedelta(hours=config.Status_update_frequency)):%Y-%m-%d %H:%M} server time.')
             else:
                 default_logger.debug(f'[Status Update] Not sent as we are before your desired time ({config.Status_update_time}).')
         else:
@@ -952,22 +965,11 @@ def keep_safe():
     else:
         default_logger.debug(f'[Status Update] Skipped because disabled by config ({config.Send_me_a_status_update}) or Debug Mode is on ({config.Debug_mode}).')
 
-        
-    # except:
-    #     raise Exception
-
-    # except Exception as err:
-    #     default_logger.warning(err)
-    
-    # else:
     # Write cooldowns to file
     Cooldown_class.write_cooldown(cooldowns)
 
     # Write all from current report_logger to array
     report_content = report_array.getvalue()
-
-    if config.Email_format.lower() == 'html':
-        report_content = Notifications_class.report_content_to_HTML(report_content)
 
     # Notify user about something that has been done
     # Will not send if Debug_mode enabled
@@ -979,19 +981,13 @@ def keep_safe():
         if config.Notify_Telegram:
             Notifications_class.telegram_notification(report_content)
         if config.Notify_Gmail:
-            Notifications_class.gmail_notification('TEXT', f'{config.EMAIL_SUBJECT} Report:', report_content)
+            Notifications_class.gmail_notification(
+                config.Email_format,
+                f'{config.EMAIL_SUBJECT} Report:',
+                report_content)
     
-    # Notify user about status report
-    if status_update != False:
-        if config.Notify_Slack:
-            Notifications_class.slack_webhook(status_update)
-        if config.Notify_Telegram:
-            Notifications_class.telegram_notification(status_update)
-        if config.Notify_Gmail:
-            Notifications_class.gmail_notification(config.Email_format, f'{config.EMAIL_SUBJECT} Status:', status_update)
-
-    default_logger.debug(f'{datetime.now():%H:%M} [Script] Ran successful. Runtime: {(time() - begin_time):.0f}s')
-    print(f'[Script] At {datetime.now():%H:%M}, ran successfully. Runtime: {(time() - begin_time):.0f}s')
+        default_logger.debug(f'{datetime.now():%H:%M} [Script] Ran successful. Runtime: {(time() - begin_time):.0f}s.')
+    print(f'[Script] At {datetime.now():%H:%M}, ran successfully. Runtime: {(time() - begin_time):.0f}s.')
     return True
 
 if __name__ == '__main__':

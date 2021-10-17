@@ -8,7 +8,7 @@ from email.mime.text import MIMEText
 
 class Notifications:
     if config.Debug_mode: print(f'Notifications Class loaded.')
-    def slack_webhook(msg:str):
+    def slack_webhook(self, msg:str):
         slack_data = {
             "blocks": [
                 {
@@ -35,7 +35,7 @@ class Notifications:
             pass
 
 
-    def telegram_notification(msg:str):
+    def telegram_notification(self, msg:str):
         tg_data = {"chat_id": str(config.TELEGRAM_CHAT_ID),
                 "text": msg, "parse_mode": 'Markdown'}
 
@@ -52,7 +52,7 @@ class Notifications:
             pass
 
 
-    def email_notification(msg:str):
+    def email_notification(self, msg:str):
 
         try:
             with open('One-stop-bot-email-temp-body.txt', 'w', encoding='utf-8') as txt_file:
@@ -61,8 +61,14 @@ class Notifications:
                     config.Email_subject + config.Email_address)
         except Exception: # Todo
             pass
+        
+    def report_content_to_HTML(self, report_content):
+        return report_content.replace('\n','<br>')
 
-    def gmail_notification(format:str, subject:str, message:str):
+    def report_contect_to_Telegram(self, report_content):
+        pass
+
+    def gmail_notification(self, format:str, subject:str, message:str):
 
         import smtplib
         from email.message import EmailMessage
@@ -71,7 +77,8 @@ class Notifications:
         server.starttls()
         server.login(config.GMAIL_ACCOUNT, config.GMAIL_APP_PASSWORD)
 
-        if format == 'HTML':
+        if format.lower() == 'html':
+            message = self.report_content_to_HTML(message)
             msg = MIMEText(message, "html")
         else:
             msg = EmailMessage()
@@ -82,11 +89,11 @@ class Notifications:
         msg['To'] = config.EMAIL_TO
         server.send_message(msg)
 
-    def generate_status_report(Anchor_borrow_info, Mirror_position_info):
+    def generate_status_report_html(self, format, Anchor_borrow_info, Mirror_position_info):
 
             status_update = ""
 
-            if config.Email_format.lower() == 'text' or config.Email_format.lower() == 'txt':
+            if format.lower() == 'text':
                 if Anchor_borrow_info["loan_amount"] > 0:
                     status_update += f'-----------------------------------\n'
                     status_update += f'------------- ANCHOR --------------\n'
@@ -116,7 +123,7 @@ class Notifications:
                         status_update += f'or if {position["mAsset_symbol"]} raises by {(position["shorted_mAsset_gain_to_liq"].__float__()*100):.0f}% you would get liquidated.\n'
                         status_update += f'\n'
                 
-            elif config.Email_format == 'html' or config.Email_format =='HTML':
+            elif format.lower() == 'html':
                 if Anchor_borrow_info["loan_amount"] > 0:
                     status_update += f'<h2>Anchor</h2>' 
                     status_update += f'bETH collateral: {(Anchor_borrow_info["amount_bETH_collateral"].__float__()/1000000):.3f} bETH<br>'
@@ -144,5 +151,4 @@ class Notifications:
             
             return status_update
 
-    def report_content_to_HTML(report_content):
-        return report_content.replace('\n','<br>')
+    

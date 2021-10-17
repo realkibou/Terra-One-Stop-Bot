@@ -150,9 +150,9 @@ If you want to be notified via Telegram, you'd need to get `TELEGRAM_TOKEN` and 
 3. Then, name the bot as you wish, ie: `MyCoolBot`.
 4. Now, choose whatever username you desire for your bot, ie: `MyCool_bot`.
 5. Done! You should see a "Congratulations" message from BotFather.
-6. Add `MyCool_bot` to a group.
-7. To get your own `chat_id`, simply send a message in the group with your bot and run the following command below: `curl -s https://api.telegram.org/botACCESSTOKEN/getUpdates` (replace `ACCESSTOKEN` with an actual token you just got from item #5).
-8. With `access_token` and `chat_id` just feed the `B_Config.py` file.
+6. To get your own `chat_id`, simply send a message in the group with your bot and run the following command below: `curl -s https://api.telegram.org/botACCESSTOKEN/getUpdates` (replace `ACCESSTOKEN` with an actual token you just got from item #5).
+7. You should get something like this `{"ok":true .... "from":{"id":1386432285 ...."text":"Hello"}}]}` We are looking for the "id" as this is the `chat_id`.
+8. Write your `access_token` and `chat_id` in the `B_Config.py` file.
 
 ## Gmail Notification Setup
 To send emails from your Google account you need to get a `GMAIL_APP_PASSWORD`.

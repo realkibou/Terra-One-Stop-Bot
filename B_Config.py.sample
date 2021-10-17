@@ -115,12 +115,12 @@ Logging_detail = 'simple'  # detailed, moderate, simple. Recommended: simple.
 Safety_multiple_on_transaction_fees = 3 # Multiplier for Anchor Borrow, Repay, Deposit. So you will have a bit of UST in your wallet left for future transactions.
 
 # NOTIFICATION SETUP
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', 'Your Bot Token here') # See readme.md how to get this.
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', 'Your Chat ID here') # See readme.md how to get this.
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '2021362648:yatqcHqDhGLU-z-XPNCDLHDVVQXZMDVFQXW') # See readme.md how to get this.
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '1386432285') # See readme.md how to get this.
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', 'Your Webhook here') # See readme.md how to get this.
 
-GMAIL_APP_PASSWORD = 'Your app password here' # See readme.md how to get this.
-GMAIL_ACCOUNT = 'Your full Gmail address here' # Your Gmail address you use for logging into your account.
+GMAIL_APP_PASSWORD = 'cjutfanqprdodiby' # See readme.md how to get this.
+GMAIL_ACCOUNT = 'myamazingemailaddress@gmail.com' # Your Gmail address you use for logging into your account.
 EMAIL_SUBJECT = 'Terra One-Stop-Bot'
 EMAIL_FROM = GMAIL_ACCOUNT # Normally the same as your main Gmail address.
 EMAIL_TO = GMAIL_ACCOUNT # Normally the same as your main Gmail address.
