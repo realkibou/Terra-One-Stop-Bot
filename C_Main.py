@@ -842,10 +842,8 @@ def keep_safe():
                     # Check if we are in a cooldown period or if the key actually exists
                     if cooldowns.get(position_idx) is None or cooldowns[position_idx] <= datetime_now:
 
-                        Mirror_withdraw_collateral_for_position_tx = Transaction_class.Mirror_withdraw_collateral_for_position(
-                            position_idx, amount_to_execute_in_kind, collateral_token_denom)
-                        Mirror_withdraw_collateral_for_position_tx_status = Queries_class.get_status_of_tx(
-                            Mirror_withdraw_collateral_for_position_tx)
+                        Mirror_withdraw_collateral_for_position_tx = Transaction_class.Mirror_withdraw_collateral_for_position(position_idx, amount_to_execute_in_kind, collateral_token_denom)
+                        Mirror_withdraw_collateral_for_position_tx_status = Queries_class.get_status_of_tx(Mirror_withdraw_collateral_for_position_tx)
 
                         if Mirror_withdraw_collateral_for_position_tx_status == True:
                             default_logger.debug(

@@ -125,18 +125,18 @@ class Transaction:
             if denom == 'aUST':
                 # https://finder.terra.money/tequila-0004/tx/10C1B6310DA5B16F5EE96F3535B99C9CD7DC5D696054D547C32A54F2317E930B
 
-                contract=Terra.aTerra
+                contract=Terra.Mint
                 execute_msg={
                     "withdraw": {
-                        "position_idx": idx,
                         "collateral": {
-                            "amount": str(collateral_amount_in_kind),
                             "info": {
                                 "token": {
                                     "contract_addr": Terra.aTerra
                                 }
-                            }
-                        }
+                            },
+                            "amount": str(collateral_amount_in_kind),
+                        },
+                    "position_idx": idx,
                     }
                 }
                 coins=Coins()
@@ -148,15 +148,15 @@ class Transaction:
                 contract=Terra.Mint
                 execute_msg={
                         "withdraw": {
-                            "position_idx": idx,
                             "collateral": {
-                                "amount": str(collateral_amount_in_kind),
                                 "info": {
                                     "native_token": {
                                         "denom": "uusd"
                                     }
-                                }
-                            }
+                                },
+                                "amount": str(collateral_amount_in_kind),
+                            },
+                        "position_idx": idx,
                         }
                     }
 
