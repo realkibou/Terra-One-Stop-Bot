@@ -114,7 +114,7 @@ I made the One-Stop-Bot as much configureable as possible. You can configure wha
 - The bot currently only supports UST, aUST and Luna as collateral on Mirror (you really should only use aUST anyway).
 
 ## ⚠️ Very important remarks!
-- This bot is quite heavy, so do not run it too short intervals. It currently has a runtime of around 1-2 min. Depending on your internet connection and how often you run it (more often, means less to do in one run, so less runtime).
+- This bot is quite heavy, so do not run it too short intervals. It currently has a runtime of around 1 min. Depending on your internet connection and how often you run it (more often, means less to do in one run, so less runtime).
 - Watch your UST balance, as this bot is doing transactions, hence drains your UST balance.
 - Use this bot at your own risk. I have done my best to check it, but program bugs & human bugs happen and I am not financial advisor.
 - This bot can be used with the Testnet. I strongly recommend playing on the Testnet or with `Disable_all_transaction_defs` set to True first, before letting it manage your funds for real. Here you can get free UST, LUNA etc: https://faucet.terra.money/.

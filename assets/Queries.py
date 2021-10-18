@@ -364,6 +364,8 @@ class Queries:
 
     def Mirror_get_claimable_UST(self, Mirror_position_info:list):
 
+        claimable = 0
+
         # Input: Mirror_position_info
         # Output: Returns the quantity of UST that can be claimed
         # https://docs.mirror.finance/contracts/lock#positionlockinfo
@@ -380,13 +382,14 @@ class Queries:
                 query_result = Terra.terra.wasm.contract_query(Terra.Lock, query)
                 locked_amount = Dec(query_result['locked_amount'])
                 unlock_time = Dec(query_result['unlock_time'])
-                if unlock_time < Dec(datetime.utcnow().timestamp()):
+                now_time = Dec(datetime.now().timestamp())
+                if unlock_time < now_time:
                     claimable += locked_amount
             
             except LCDResponseError as err:
                 # Status code 500 means, that there is no unclaimed UST. If so, this exception can be ignored
                 if err.response.status == 500:
-                    claimable = 0
+                    pass
                 else:
                     raise err
 
