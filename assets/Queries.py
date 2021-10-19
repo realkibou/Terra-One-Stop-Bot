@@ -118,7 +118,8 @@ class Queries:
 
     def Mirror_get_position_info(self):
         Mirror_position_info:list
-        Mirror_position_info= []
+        Mirror_position_info = []
+        reserve_UST = 0
 
         query_position_ids = {
             "positions": {
@@ -126,6 +127,8 @@ class Queries:
             },
         }
         position_ids_result = Terra.terra.wasm.contract_query(Terra.Mint, query_position_ids)
+
+
 
         for position in position_ids_result['positions']:
 
@@ -162,7 +165,7 @@ class Queries:
 
             oracle_price_and_min_col_ratio = self.get_oracle_price_and_min_col_ratio(mAsset_address)
             oracle_price = oracle_price_and_min_col_ratio[0]
-            shorted_asset_amount = oracle_price_and_min_col_ratio[0] * shorted_asset_qty
+            shorted_asset_amount = oracle_price * shorted_asset_qty
 
             # If the collateral is provided in UST or aUST the min_col_ratio is as received form the query.
             # if the colalteral is Luna it is luna_col_multiplier (4/3) of the min_col_ratio
@@ -171,7 +174,7 @@ class Queries:
             else:
                 min_col_ratio = oracle_price_and_min_col_ratio[1]
 
-            cur_col_ratio = collateral_amount_in_ust / (oracle_price * shorted_asset_qty)
+            cur_col_ratio = collateral_amount_in_ust / shorted_asset_amount
             lower_trigger_ratio = min_col_ratio + Dec(config.Mirror_lower_distance)
             target_ratio = min_col_ratio + Dec(config.Mirror_target_distance)
             upper_trigger_ratio = min_col_ratio + Dec(config.Mirror_upper_distance)
@@ -180,6 +183,8 @@ class Queries:
             shorted_mAsset_gain_to_liq = (collateral_amount_in_ust / min_col_ratio / shorted_asset_amount) - 1
 
             distance_to_min_col = cur_col_ratio - min_col_ratio
+
+            reserve_UST += cur_col_ratio * 1.05 * shorted_asset_amount
 
             if cur_col_ratio < lower_trigger_ratio \
                     and config.Mirror_enable_deposit_collateral:
@@ -227,7 +232,8 @@ class Queries:
                 'action_to_be_executed': action_to_be_executed,
                 'amount_to_execute_in_kind': amount_to_execute_in_kind,
                 'amount_to_execute_in_ust': amount_to_execute_in_ust,
-                'distance_to_min_col': distance_to_min_col
+                'distance_to_min_col': distance_to_min_col,
+                'reserve_UST': reserve_UST,
             })
 
         # Sort positions by distance_to_min_col (lowest first)

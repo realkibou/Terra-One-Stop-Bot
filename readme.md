@@ -104,6 +104,7 @@ I made the One-Stop-Bot as much configureable as possible. You can configure wha
     * `Logging_detail` Define what level of detail each log shall show
 15. Other stuff
     * `Safety_multiple_on_transaction_fees` Safety multiple on transaction fees
+    * `Block_failed_transaction_cooldown` If case a transaction fails, you can set it to NOT be tried again for a period of hours.
 
 ## What the One-Stop-Bot does NOT do:
 - Withdraws any UST from Anchor Borrow to deposit that new UST collateral on Mirror.

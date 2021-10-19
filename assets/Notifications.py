@@ -122,6 +122,9 @@ class Notifications:
                         status_update += f'If all your collateral loses {(position["collateral_loss_to_liq"].__float__()*100):.0f}%\n'
                         status_update += f'or if {position["mAsset_symbol"]} raises by {(position["shorted_mAsset_gain_to_liq"].__float__()*100):.0f}% you would get liquidated.\n'
                         status_update += f'\n'
+
+                    status_update +=f'Reserve: In order to increase your LTV by 5% on all positions you would need assets valued {Mirror_position_info[len(Mirror_position_info)-1]["reserve_UST"].__float__()/1000000:.0f} UST. Do you have enough?'
+
                 
             elif format.lower() == 'html':
                 if Anchor_borrow_info["loan_amount"] > 0:
@@ -148,7 +151,9 @@ class Notifications:
                         status_update += f'If your collateral would lose {(position["collateral_loss_to_liq"].__float__()*100):.0f}%<br>'
                         status_update += f'or if {position["mAsset_symbol"]} would raise by {(position["shorted_mAsset_gain_to_liq"].__float__()*100):.0f}% you would get liquidated.<br>'
                         status_update += f'<br>'
-            
+
+                    status_update += f'Reserve: In order to increase your LTV by 5% on all positions you would need assets valued {Mirror_position_info[len(Mirror_position_info)-1]["reserve_UST"].__float__()/1000000:.0f} UST. Do you have enough?'
+
             return status_update
 
     

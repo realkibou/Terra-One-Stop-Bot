@@ -113,6 +113,7 @@ Logging_detail = 'simple'  # detailed, moderate, simple. Recommended: simple.
 
 # OTHER
 Safety_multiple_on_transaction_fees = 3 # Multiplier for Anchor Borrow, Repay, Deposit. So you will have a bit of UST in your wallet left for future transactions.
+Block_failed_transaction_cooldown = 6 # In hours. In case a transaction fails that transaction can be blocked for a certain amount of time.
 
 # NOTIFICATION SETUP
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '2021362648:yatqcHqDhGLU-z-XPNCDLHDVVQXZMDVFQXW') # See readme.md how to get this.
