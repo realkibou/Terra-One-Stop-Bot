@@ -1,9 +1,9 @@
 ## Summary
-Tired of non-stop worrying whether you will get liquidated when the market moves? You want to get the maximum out of your Degen Delta Neutral Strategy on Mirror? You want to minimize the risk of your rewards token (SPEC, MIR) losing in value, and rather want to sell them? You want to maintain a healthy LTV on your Anchor Borrow and deposit the borrowed UST into Anchor Earn?
+Tired of non-stop worrying whether you will get liquidated when the market moves? You want to get the maximum out of your Degen Delta Neutral Strategy on Mirror? You want to minimize the risk of your rewards token (SPEC, MIR) losing in value, and rather want to sell them? You want to maintain a healthy LTV on your Anchor Borrow and deposit the borrowed UST into Anchor Earn? Not sure to claim and sell your token rewards?
 
 Then, this bot is for you!
 
-Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra.
+Automatically manage all your ANC, MIR, SPEC token rewards, Mirror Delta Neutral Short Positions, UST claims after lockup, Anchor Borrow and Earn for Terra, deposits and withdraws from liquidity pools to sell.
 
 ## Thank you!
 If this bot is helpful to you and helps maximize your gainz, feel free to donate a bit to `terra1xl0ww4tykjmm4vnzck0qz5luu6rxl97wuwmgfg`. This will also keep the development going and the bot up-to-date. Thank you! :)

@@ -152,7 +152,7 @@ class Notifications:
                         status_update += f'or if {position["mAsset_symbol"]} would raise by {(position["shorted_mAsset_gain_to_liq"].__float__()*100):.0f}% you would get liquidated.<br>'
                         status_update += f'<br>'
 
-                    status_update += f'Reserve: In order to increase your LTV by 5% on all positions you would need assets valued {Mirror_position_info[len(Mirror_position_info)-1]["reserve_UST"].__float__()/1000000:.0f} UST. Do you have enough?'
+                    status_update += f'Reserve: In order to increase your LTV by 5% on all positions you would need assets valued at {Mirror_position_info[len(Mirror_position_info)-1]["reserve_UST"].__float__()/1000000:.0f} UST. Do you have enough?'
 
             return status_update
 
