@@ -20,12 +20,10 @@ class Cooldown:
     def write_cooldown(self, cooldowns):
         with open('X_Cooldowns.json', 'w') as fp:
             # Stringify dates otherwise cannot be written into json
-            for index in cooldowns:
-                cooldowns[index] = f'{cooldowns[index]:%Y-%m-%d %H:%M}'
+            cooldowns = dict((i, f'{cooldowns[i]:%Y-%m-%d %H:%M}') for i in cooldowns)
             self.default_logger.debug(f'[Script] {cooldowns} has been written to X_Cooldowns.json')
             dump(cooldowns, fp)
         fp.close
-        pass
 
     def read_cooldown(self):
 
@@ -42,8 +40,7 @@ class Cooldown:
             self.default_logger.debug(f'[Script] X_Cooldowns.json existed and has been read: {cooldowns}')
             f.close
 
-            for index in cooldowns:
-                cooldowns[index] = datetime.strptime(cooldowns[index], '%Y-%m-%d %H:%M')
+            cooldowns = dict((i, datetime.strptime(cooldowns[i], '%Y-%m-%d %H:%M')) for i in cooldowns)
         
             return cooldowns
         except:
@@ -80,4 +77,4 @@ class Prettify:
 
         # If it is just a plain dict
         elif type(input_value) is dict:
-            return dict((k, self.value_convert_dec_to_float(v, human)) for k, v in input_value.items())    
+            return dict((k, self.value_convert_dec_to_float(v, human)) for k, v in input_value.items())

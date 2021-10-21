@@ -33,21 +33,22 @@ def get_terra_gas_prices(retry=0):
         else:
             raise err
   
-terra_gas_prices = get_terra_gas_prices()
-
 class Terra:
     if config.Debug_mode: print(f'Terra Class loaded.')
+
+    terra_gas_prices = get_terra_gas_prices()
+
     if config.NETWORK == 'MAINNET':
         chain_id = 'columbus-5'
         public_node_url = 'https://lcd.terra.dev'
-        tx_look_up = f'https://finder.terra.money/{chain_id}/tx/'
+        # tx_look_up = f'https://finder.terra.money/{chain_id}/tx/'
         contact_addresses = Contract_addresses.contact_addresses(network='MAINNET')
         rev_Contract_addresses = Contract_addresses.rev_contact_addresses(contact_addresses)
 
     else:
         chain_id = 'bombay-12'
         public_node_url = 'https://bombay-lcd.terra.dev'
-        tx_look_up = f'https://finder.terra.money/{chain_id}/tx/'
+        # tx_look_up = f'https://finder.terra.money/{chain_id}/tx/'
         contact_addresses = Contract_addresses.contact_addresses(network='bombay-12')
         rev_Contract_addresses = Contract_addresses.rev_contact_addresses(contact_addresses)
 

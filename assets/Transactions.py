@@ -166,16 +166,10 @@ class Transaction:
 
         def Mirror_claim_unlocked_UST(self, Mirror_position_info:dict):
 
-            def position_idxs_to_be_claimed():
-                position_idxs_to_be_claimed = []
-                for position in Mirror_position_info:
-                    position_idxs_to_be_claimed.append(position['position_idx'])
-                return position_idxs_to_be_claimed
-
             contract=Terra.Lock
             execute_msg={
                 "unlock_position_funds": {
-                    "positions_idx": position_idxs_to_be_claimed()
+                    "positions_idx": [position['position_idx'] for position in Mirror_position_info]
                 }
             }
             coins=Coins()

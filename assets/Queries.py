@@ -72,17 +72,10 @@ class Queries:
         query = {
             "pool": {}
         }
-
         query_result = Terra.terra.wasm.contract_query(token_UST_pair_address, query)
-        for asset in query_result['assets']:
-            # If ['info']['token'] does not exists, the current asset is uusd
-            if asset['info'].get('token') is None:
-                UST_in_pool = Dec(asset['amount'])
 
-            # Otherwise it is the token
-            else:
-                token_in_pool = Dec(asset['amount'])
-
+        UST_in_pool = sum(Dec(asset['amount']) for asset in query_result['assets'] if asset['info'].get('token') is None)
+        token_in_pool = sum(Dec(asset['amount']) for asset in query_result['assets'] if asset['info'].get('token') is not None)
         total_share = Dec(query_result['total_share'])
 
         return [token_in_pool, UST_in_pool, total_share]
@@ -274,9 +267,8 @@ class Queries:
 
         query_result = Terra.terra.wasm.contract_query(Terra.MirrorStaking, query)
 
-        # Sum up all claimable rewards for this account_address
-        for reward in query_result['reward_infos']:
-            claimable += Dec(reward['pending_reward'])
+        # Sum up all claimable rewards for this account_address        
+        claimable = sum(Dec(reward['pending_reward']) for reward in query_result['reward_infos'])
 
         return Dec(claimable)
 
@@ -300,8 +292,7 @@ class Queries:
         query_result_mirrorFarm = Terra.terra.wasm.contract_query(Terra.mirrorFarm, query)
         # print(f'mirrorFarm: {query_result_mirrorFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result_mirrorFarm['reward_infos']:
-            claimable_mirrorFarm += Dec(reward['pending_spec_reward'])
+        claimable_mirrorFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_mirrorFarm['reward_infos'])
 
         # Query for the Anchor related claimable SPEC
         query = {
@@ -313,8 +304,7 @@ class Queries:
         query_result_anchorFarm = Terra.terra.wasm.contract_query(Terra.anchorFarm, query)
         # print(f'anchorFarm: {query_result_anchorFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result_anchorFarm['reward_infos']:
-            claimable_anchorFarm += Dec(reward['pending_spec_reward'])
+        claimable_anchorFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_anchorFarm['reward_infos'])
 
         # Query for the Spec related claimable SPEC
         query = {
@@ -326,8 +316,7 @@ class Queries:
         query_result_specFarm = Terra.terra.wasm.contract_query(Terra.specFarm, query)
         # print(f'specFarm: {query_result_specFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result_specFarm['reward_infos']:
-            claimable_specFarm += Dec(reward['pending_spec_reward'])
+        claimable_specFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_specFarm['reward_infos'])
 
         # Query for the Pylon related claimable SPEC
         query = {
@@ -339,8 +328,7 @@ class Queries:
         query_result_pylonFarm = Terra.terra.wasm.contract_query(Terra.pylonFarm, query)
         # print(f'pylonFarm: {query_result_pylonFarm}')
         # Sum up all claimable rewards for this account_address
-        for reward in query_result_pylonFarm['reward_infos']:
-            claimable_pylonFarm += Dec(reward['pending_spec_reward'])
+        claimable_pylonFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_pylonFarm['reward_infos'])
 
         # claimable_SPEC_dict = {
         #     "claimable_mirrorFarm": Dec(claimable_mirrorFarm)/1000000,
@@ -445,27 +433,22 @@ class Queries:
         }
         query_result = Terra.terra.wasm.contract_query(token_farm_address, query)
 
-        if not query_result == []:
-            for reward_info in query_result['reward_infos']:
-                if reward_info['asset_token'] == token_address:
-                    LP_token_available = reward_info['bond_amount']
+        if query_result != []:
+            LP_token_available = sum(Dec(reward_info['bond_amount']) for reward_info in query_result['reward_infos'] if reward_info['asset_token'] == token_address)
 
         return Dec(LP_token_available)
 
     def Anchor_get_max_ltv_ratio(self):
         
-        max_ltv_ratio:dict
-        max_ltv_ratio = {}
+        # max_ltv_ratio:dict
+        # max_ltv_ratio = {}
 
         query = {
             "whitelist": {},
         }
         query_result = Terra.terra.wasm.contract_query(Terra.mmOverseer, query)
 
-        for elem in query_result['elems']:
-            max_ltv_ratio[elem['symbol']] = Dec(elem['max_ltv'])
-
-        return max_ltv_ratio
+        return dict((elem['symbol'], Dec(elem['max_ltv'])) for elem in query_result['elems'])
 
 
     def Anchor_get_borrow_info(self):
@@ -501,9 +484,7 @@ class Queries:
 
             loan_amount = Dec(loan_amount_result['loan_amount'])
 
-            collateral_dict = {}
-            for collateral in query_msg_collateral_result['collaterals']:
-                collateral_dict[collateral[0]] = Dec(collateral[1])
+            collateral_dict = dict((collateral[0], Dec(collateral[1])) for collateral in query_msg_collateral_result['collaterals'])
 
             if collateral_dict.get(Terra.bETH_token) is not None:
                 amount_bETH_collateral = collateral_dict[Terra.bETH_token]
@@ -629,10 +610,8 @@ class Queries:
         # Todo: Return a dict with all natives to be incl in the wallet_balance dict provided
 
         balance_native = Terra.terra.bank.balance(address=account_address).to_data()
-        for item in balance_native:
-            if item['denom'] == denom:
-                return Dec(item['amount'])
-        return 0
+
+        return sum(Dec(item['amount']) for item in balance_native if item['denom'] == denom)
 
     def get_non_native_balance(self, token_address):
         # Todo: Return a dict with all natives to be incl in the wallet_balance dict provided

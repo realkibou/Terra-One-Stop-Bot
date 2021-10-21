@@ -35,9 +35,9 @@ from time import time
 Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class, Notifications_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify(), Notifications()
 default_logger, report_logger, report_array = Logger_class.default_logger, Logger_class.report_logger, Logger_class.report_array
 
-def keep_safe():
+def main():
 
-    if config.Debug_mode: print(f'keep_safe() started.')
+    if config.Debug_mode: print(f'main() started.')
 
     begin_time = time()
 
@@ -1092,4 +1092,4 @@ def keep_safe():
     return True
 
 if __name__ == '__main__':
-    keep_safe = keep_safe()
+    main = main()
