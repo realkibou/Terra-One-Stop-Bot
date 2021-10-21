@@ -38,7 +38,9 @@ default_logger, report_logger, report_array = Logger_class.default_logger, Logge
 def keep_safe():
 
     if config.Debug_mode: print(f'keep_safe() started.')
+
     begin_time = time()
+
     wallet_balance = Queries_class.get_wallet_balances()
     general_estimated_tx_fee = Dec(Queries_class.get_fee_estimation())
 
@@ -51,12 +53,16 @@ def keep_safe():
     cooldowns = Cooldown_class.read_cooldown()
     status_update = False
 
+    claimable_MIR = claimable_SPEC = claimable_ANC = value_of_SPEC_LP_token =available_ANC_LP_token_for_withdrawal = value_of_ANC_LP_token = 0
+
     Mirror_position_info = Queries_class.Mirror_get_position_info()
     Anchor_borrow_info = Queries_class.Anchor_get_borrow_info()
     wallet_balance = Queries_class.get_wallet_balances()
     all_rates = Queries_class.get_all_rates()
+    tax_rate = Terra.terra.treasury.tax_rate()
     
     action_dict = {'MIR' : 'none','SPEC' : 'none','ANC' : 'none', }
+
     
     wallet_balance_before = Queries_class.get_wallet_balances()
     default_logger.debug(f'Wallet_balance_before: {Prettify_class.dict_value_convert_dec_to_float(wallet_balance_before, True)}')
@@ -70,13 +76,14 @@ def keep_safe():
         if cooldowns.get('withdraw_MIR_from_pool') is None or cooldowns['withdraw_MIR_from_pool'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
             if wallet_balance['UST'] > general_estimated_tx_fee:
+                available_MIR_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.mirrorFarm, Terra_class.MIR_token)
+                value_of_MIR_LP_token = all_rates['MIR-TOKEN-PER-SHARE'] * available_MIR_LP_token_for_withdrawal * all_rates['MIR']/1000000 \
+                                        + all_rates['MIR-UST-PER-SHARE'] * available_MIR_LP_token_for_withdrawal
                 # Check if the min_price for the token has been matched
                 if (all_rates['MIR']/1000000) > config.MIR_min_price:
                     # Check if there are any LP for that token available
-                    available_MIR_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.mirrorFarm, Terra_class.MIR_token)
                     if available_MIR_LP_token_for_withdrawal > 0:
                         # Check if the min_withdrawal_limit is exceeded
-                        value_of_MIR_LP_token = Queries_class.get_UST_amount_for_LP_deposit(available_MIR_LP_token_for_withdrawal, Terra_class.Mirror_MIR_UST_Pair)
                         if (value_of_MIR_LP_token/1000000) > config.MIR_min_total_value:
                             # Unstake / withdrawn LP
                             withdraw_MIR_from_pool_tx = Transaction_class.withdraw_MIR_from_pool(available_MIR_LP_token_for_withdrawal)
@@ -111,13 +118,14 @@ def keep_safe():
         if cooldowns.get('withdraw_SPEC_from_pool') is None or cooldowns['withdraw_SPEC_from_pool'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
             if wallet_balance['UST'] > general_estimated_tx_fee:
+                available_SPEC_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.specFarm, Terra_class.SPEC_token)
+                value_of_SPEC_LP_token = all_rates['SPEC-TOKEN-PER-SHARE'] * available_SPEC_LP_token_for_withdrawal * all_rates['SPEC']/1000000 \
+                                        + all_rates['SPEC-UST-PER-SHARE'] * available_SPEC_LP_token_for_withdrawal
                 # Check if the min_price for the token has been matched
                 if (all_rates['SPEC']/1000000) > config.SPEC_min_price:
                     # Check if there are any LP for that token available
-                    available_SPEC_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.specFarm, Terra_class.SPEC_token)
                     if available_SPEC_LP_token_for_withdrawal > 0:
                         # Check if the min_withdrawal_limit is exceeded
-                        value_of_SPEC_LP_token = Queries_class.get_UST_amount_for_LP_deposit(available_SPEC_LP_token_for_withdrawal, Terra_class.Spectrum_SPEC_UST_Pair)
                         if (value_of_SPEC_LP_token/1000000) > config.SPEC_min_total_value:
                             # Unstake / withdrawn LP
                             withdraw_SPEC_from_pool_tx = Transaction_class.withdraw_SPEC_from_pool(available_SPEC_LP_token_for_withdrawal)
@@ -153,13 +161,14 @@ def keep_safe():
         if cooldowns.get('withdraw_ANC_from_pool') is None or cooldowns['withdraw_ANC_from_pool'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
             if wallet_balance['UST'] > general_estimated_tx_fee:
+                available_ANC_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.anchorFarm, Terra_class.ANC_token)
+                value_of_ANC_LP_token = all_rates['ANC-TOKEN-PER-SHARE'] * available_ANC_LP_token_for_withdrawal * all_rates['ANC']/1000000 \
+                                        + all_rates['ANC-UST-PER-SHARE'] * available_ANC_LP_token_for_withdrawal
                 # Check if the min_price for the token has been matched
                 if (all_rates['ANC']/1000000) > config.ANC_min_price:
                     # Check if there are any LP for that token available
-                    available_ANC_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.anchorFarm, Terra_class.ANC_token)
                     if available_ANC_LP_token_for_withdrawal > 0:
                         # Check if the min_withdrawal_limit is exceeded
-                        value_of_ANC_LP_token = Queries_class.get_UST_amount_for_LP_deposit(available_ANC_LP_token_for_withdrawal, Terra_class.Terraswap_ANC_UST_Pair)
                         if (value_of_ANC_LP_token/1000000) > config.ANC_min_total_value:
                             # Unstake / withdrawn LP
                             withdraw_ANC_from_pool_tx = Transaction_class.withdraw_ANC_from_pool(available_ANC_LP_token_for_withdrawal)
@@ -226,7 +235,7 @@ def keep_safe():
                         # Check if deposit is enabled
                         elif config.MIR_claim_and_deposit_in_LP:
                             # Check if enough UST is available to actually deposit it later
-                            UST_to_be_deposited_with_MIR = Queries_class.get_UST_amount_for_LP_deposit(claimable_MIR, Terra_class.Mirror_MIR_UST_Pair)
+                            UST_to_be_deposited_with_MIR = claimable_MIR * (all_rates['MIR'] + tax_rate)
                             if wallet_balance['UST'] > UST_to_be_deposited_with_MIR:
                                 # Claim and mark for deposit
                                 claim_MIR_tx = Transaction_class.claim_MIR()
@@ -321,7 +330,7 @@ def keep_safe():
                         # Check if deposit is enabled
                         elif config.SPEC_claim_and_deposit_in_LP:
                             # Check if enough UST is available to actually deposit it later
-                            UST_to_be_deposited_with_SPEC = Queries_class.get_UST_amount_for_LP_deposit(claimable_SPEC, Terra_class.Spectrum_SPEC_UST_Pair)
+                            UST_to_be_deposited_with_SPEC = claimable_SPEC * (all_rates['SPEC'] + tax_rate)
                             if wallet_balance['UST'] > UST_to_be_deposited_with_SPEC:
                                 # Claim and mark for deposit
                                 claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
@@ -415,7 +424,7 @@ def keep_safe():
                         # Check if deposit is enabled
                         elif config.ANC_claim_and_deposit_in_LP:
                             # Check if enough UST is available to actually deposit it later
-                            UST_to_be_deposited_with_ANC = Queries_class.get_UST_amount_for_LP_deposit(claimable_ANC, Terra_class.Terraswap_ANC_UST_Pair)
+                            UST_to_be_deposited_with_ANC = claimable_ANC * (all_rates['ANC'] + tax_rate)
                             if wallet_balance['UST'] > UST_to_be_deposited_with_ANC:
                                 # Claim and mark for deposit
                                 claim_ANC_tx = Transaction_class.claim_ANC()
@@ -643,7 +652,7 @@ def keep_safe():
                     MIR_to_be_deposited = wallet_balance['MIR'] - wallet_balance_before['MIR']
                     if MIR_to_be_deposited > 0:
                         # Price and min_value has been checked before therefore deposit
-                        UST_to_be_deposited_with_MIR = Queries_class.get_UST_amount_for_LP_deposit(MIR_to_be_deposited,Terra_class.Mirror_MIR_UST_Pair)
+                        UST_to_be_deposited_with_MIR = MIR_to_be_deposited * (all_rates['MIR'] + tax_rate)
                         deposit_MIR_tx = Transaction_class.deposit_MIR_in_pool(MIR_to_be_deposited, UST_to_be_deposited_with_MIR)
                         deposit_MIR_tx_status = Queries_class.get_status_of_tx(deposit_MIR_tx)
                         if deposit_MIR_tx_status == True:
@@ -678,7 +687,7 @@ def keep_safe():
                     SPEC_to_be_deposited = wallet_balance['SPEC'] - wallet_balance_before['SPEC']
                     if SPEC_to_be_deposited > 0:
                         # Price and min_value has been checked before therefore deposit
-                        UST_to_be_deposited_with_SPEC = Queries_class.get_UST_amount_for_LP_deposit(SPEC_to_be_deposited,Terra_class.Spectrum_SPEC_UST_Pair)
+                        UST_to_be_deposited_with_SPEC = SPEC_to_be_deposited * (all_rates['SPEC'] + tax_rate)
                         deposit_SPEC_tx = Transaction_class.deposit_SPEC_in_pool(SPEC_to_be_deposited, UST_to_be_deposited_with_SPEC)
                         deposit_SPEC_tx_status = Queries_class.get_status_of_tx(deposit_SPEC_tx)
                         if deposit_SPEC_tx_status == True:
@@ -714,7 +723,7 @@ def keep_safe():
                     ANC_to_be_deposited = wallet_balance['ANC'] - wallet_balance_before['ANC']
                     if ANC_to_be_deposited > 0:
                         # Price and min_value has been checked before therefore deposit
-                        UST_to_be_deposited_with_ANC = Queries_class.get_UST_amount_for_LP_deposit(ANC_to_be_deposited,Terra_class.Terraswap_ANC_UST_Pair)
+                        UST_to_be_deposited_with_ANC = ANC_to_be_deposited * (all_rates['ANC'] + tax_rate)
                         deposit_ANC_tx = Transaction_class.deposit_ANC_in_pool(ANC_to_be_deposited, UST_to_be_deposited_with_ANC)
                         deposit_ANC_tx_status = Queries_class.get_status_of_tx(deposit_ANC_tx)
                         if deposit_ANC_tx_status == True:
@@ -1022,7 +1031,12 @@ def keep_safe():
         if cooldowns.get('Staus_Report_cooldown') is None or cooldowns['Staus_Report_cooldown'] <= datetime_now:
             if datetime.strptime(f'{datetime_now:%H:%M}', '%H:%M') > datetime.strptime(config.Status_update_time, '%H:%M'):
 
-                status_update = Notifications_class.generate_status_report_html('text', Anchor_borrow_info, Mirror_position_info)
+                status_update = Notifications_class.generate_status_report_html(
+                    'text',
+                    Anchor_borrow_info, Mirror_position_info,
+                    claimable_MIR, claimable_SPEC, claimable_ANC, claimable_UST,
+                    available_MIR_LP_token_for_withdrawal, available_SPEC_LP_token_for_withdrawal, available_ANC_LP_token_for_withdrawal,
+                    all_rates)
                 # Notify user about status report
                 if config.Notify_Slack:
                     Notifications_class.slack_webhook(status_update)
@@ -1034,8 +1048,10 @@ def keep_safe():
                         f'{config.EMAIL_SUBJECT} Status:',
                         Notifications_class.generate_status_report_html(
                             config.Email_format,
-                            Anchor_borrow_info,
-                            Mirror_position_info))
+                            Anchor_borrow_info, Mirror_position_info,
+                            claimable_MIR, claimable_SPEC, claimable_ANC, claimable_UST,
+                            available_MIR_LP_token_for_withdrawal, available_SPEC_LP_token_for_withdrawal, available_ANC_LP_token_for_withdrawal,
+                            all_rates))
 
                 # Cooldown: Write date of today into cooldown dictionary
                 cooldowns['Staus_Report_cooldown'] = datetime.strptime(f'{date.today()} {config.Status_update_time}', '%Y-%m-%d %H:%M') + timedelta(hours=config.Status_update_frequency)

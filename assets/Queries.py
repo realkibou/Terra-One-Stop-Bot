@@ -41,9 +41,24 @@ class Queries:
         all_rates['aUST'] = Dec(query_result['exchange_rate']) * 1000000
 
         # Update ANC, MIR, SPEC as those prices are critical to be up-to-date
-        all_rates['MIR'] = Dec(self.get_swap_price(Terra.Mirror_MIR_UST_Pair) * 1000000)
-        all_rates['SPEC'] = Dec(self.get_swap_price(Terra.Spectrum_SPEC_UST_Pair) * 1000000)
-        all_rates['ANC'] = Dec(self.get_swap_price(Terra.Terraswap_ANC_UST_Pair) * 1000000)
+
+        MIR_pool_info = self.get_pool_info(Terra.Mirror_MIR_UST_Pair)
+        SPEC_pool_info = self.get_pool_info(Terra.Spectrum_SPEC_UST_Pair)
+        ANC_pool_info = self.get_pool_info(Terra.Terraswap_ANC_UST_Pair)
+
+        all_rates['MIR'] = Dec(MIR_pool_info[1] / MIR_pool_info[0] * 1000000)
+        all_rates['SPEC'] = Dec(SPEC_pool_info[1] / SPEC_pool_info[0] * 1000000)
+        all_rates['ANC'] = Dec(ANC_pool_info[1] / ANC_pool_info[0] * 1000000)
+
+        all_rates['MIR-TOKEN-PER-SHARE'] = Dec(MIR_pool_info[0] / MIR_pool_info[2])
+        all_rates['MIR-UST-PER-SHARE'] = Dec(MIR_pool_info[1] / MIR_pool_info[2])
+        
+        all_rates['SPEC-TOKEN-PER-SHARE'] = Dec(SPEC_pool_info[0] / SPEC_pool_info[2])
+        all_rates['SPEC-UST-PER-SHARE'] = Dec(SPEC_pool_info[1] / SPEC_pool_info[2])
+        
+        all_rates['ANC-TOKEN-PER-SHARE'] = Dec(ANC_pool_info[0] / ANC_pool_info[2])
+        all_rates['ANC-UST-PER-SHARE'] = Dec(ANC_pool_info[1] / ANC_pool_info[2])
+
         return all_rates
 
     def get_fee_estimation(self):
@@ -52,10 +67,7 @@ class Queries:
         fee = estimation.to_data().get('amount')
         return Dec(fee)
 
-    def get_swap_price(self, token_UST_pair_address:str):
-
-        # Get the terra swap price from the pool
-        # https://bombay-lcd.terra.dev/wasm/contracts/terra15cjce08zcmempedxwtce2y44y2ayup8gww3txr/store?query_msg={"pool":{}}
+    def get_pool_info(self, token_UST_pair_address:str):
 
         query = {
             "pool": {}
@@ -70,9 +82,10 @@ class Queries:
             # Otherwise it is the token
             else:
                 token_in_pool = Dec(asset['amount'])
-        Swap_price = UST_in_pool / token_in_pool
 
-        return Dec(Swap_price)
+        total_share = Dec(query_result['total_share'])
+
+        return [token_in_pool, UST_in_pool, total_share]
 
 
 
@@ -435,18 +448,9 @@ class Queries:
         if not query_result == []:
             for reward_info in query_result['reward_infos']:
                 if reward_info['asset_token'] == token_address:
-                    LP_token_available = reward_info['bond_amount']        
+                    LP_token_available = reward_info['bond_amount']
 
         return Dec(LP_token_available)
-
-    def get_UST_amount_for_LP_deposit(self, token_amount:Dec, token_UST_pair_address:str):
-
-        Swap_price = self.get_swap_price(token_UST_pair_address)
-        tax_rate = Terra.terra.treasury.tax_rate()
-        UST_amount = token_amount * (Swap_price + tax_rate)
-
-        return Dec(UST_amount)
-
 
     def Anchor_get_max_ltv_ratio(self):
         
