@@ -1055,7 +1055,7 @@ def main():
 
                 # Cooldown: Write date of today into cooldown dictionary
                 cooldowns['Staus_Report_cooldown'] = datetime.strptime(f'{date.today()} {config.Status_update_time}', '%Y-%m-%d %H:%M') + timedelta(hours=config.Status_update_frequency)
-                report_logger.info(f'[Status Update] Cooldown limit has been activated. Next Status Report will be send on {(datetime.strptime(f"{date.today()} {config.Status_update_time}", "%Y-%m-%d %H:%M") + timedelta(hours=config.Status_update_frequency)):%Y-%m-%d %H:%M} server time.')
+                default_logger.debug(f'[Status Update] Cooldown limit has been activated. Next Status Report will be send on {(datetime.strptime(f"{date.today()} {config.Status_update_time}", "%Y-%m-%d %H:%M") + timedelta(hours=config.Status_update_frequency)):%Y-%m-%d %H:%M} server time.')
             else:
                 default_logger.debug(f'[Status Update] Not sent as we are before your desired time ({config.Status_update_time}).')
         else:
