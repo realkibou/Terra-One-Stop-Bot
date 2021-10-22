@@ -322,7 +322,7 @@ class Transaction:
         def Anchor_deposit_UST_for_Earn(self, amount:Dec):
 
             # Depoit a bit less, to have some UST for tx feess
-            amount = int(amount - fee_estimation * config.Safety_multiple_on_transaction_fees)
+            amount = int(amount - fee_estimation * Dec(config.Safety_multiple_on_transaction_fees))
 
             if amount > 0:
 
@@ -343,11 +343,15 @@ class Transaction:
 
         def Anchor_withdraw_UST_from_Earn(self, amount:Dec, denom:str):
 
-            amount = int(amount + config.Safety_multiple_on_transaction_fees * fee_estimation)
+            amount = int(amount + Dec(config.Safety_multiple_on_transaction_fees) * fee_estimation)
 
             # Convert amount UST into aUST for withdrawl and add a bit more for fees
             if denom == 'UST':
-                amount = int(amount / Queries_class.all_rates['aUST'])
+                amount = int(amount / Queries_class.all_rates['aUST'] * 1000000)
+            elif denom == 'aUST':
+                amount = amount
+            else:
+                raise Exception # Todo
 
             contract=Terra.aTerra
             execute_msg={
@@ -365,7 +369,7 @@ class Transaction:
         def Anchor_repay_debt_UST(self, amount:Dec):
 
             # Deduct the fee incl safety so there is still some UST left
-            amount = int(amount - fee_estimation * config.Safety_multiple_on_transaction_fees)
+            amount = int(amount - fee_estimation * Dec(config.Safety_multiple_on_transaction_fees))
 
             if amount > 0:
 
@@ -386,7 +390,7 @@ class Transaction:
 
         def Anchor_borrow_more_UST(self, amount:Dec):
 
-            amount = int(amount + fee_estimation * config.Safety_multiple_on_transaction_fees)
+            amount = int(amount + fee_estimation * Dec(config.Safety_multiple_on_transaction_fees))
 
             contract=Terra.mmMarket
             execute_msg={

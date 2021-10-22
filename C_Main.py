@@ -789,9 +789,9 @@ def main():
 
                     # Otherwise check if the balance in the wallet + a withdrawl of UST from Anchor Earn would be enough, and withdraw what is needed
                     elif config.Anchor_enable_withdraw_of_deposited_UST \
-                            and (wallet_balance['aUST'] * Queries_class.get_aUST_rate() + wallet_balance['UST'] - general_estimated_tx_fee) >= Anchor_amount_to_execute_in_ust:
+                            and (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['UST'] - general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000) >= Anchor_amount_to_execute_in_ust:
 
-                        Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - wallet_balance['UST'] + general_estimated_tx_fee
+                        Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - wallet_balance['UST'] + general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000
                         Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(Amount_to_be_withdrawn, 'UST')
                         Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(Anchor_withdraw_UST_from_Earn_tx)
 
