@@ -115,13 +115,13 @@ I made the One-Stop-Bot as much configureable as possible. You can configure wha
 - The bot currently only supports UST, aUST and Luna as collateral on Mirror (you really should only use aUST anyway).
 
 ## ⚠️ Very important remarks!
-- This bot is quite heavy, so do not run it too short intervals. It currently has a runtime of around 1 min. Depending on your internet connection and how often you run it (more often, means less to do in one run, so less runtime).
+- It's recommended to run this code in a contained environment at maximum security.
+- Do not run the bot in too short intervals. I implemented async def for the most part, so the current runtime is around 10-30 sec depending on your internet connection.
 - Watch your UST balance, as this bot is doing transactions, hence drains your UST balance.
 - Use this bot at your own risk. I have done my best to check it, but program bugs & human bugs happen and I am not financial advisor.
 - This bot can be used with the Testnet. I strongly recommend playing on the Testnet or with `Disable_all_transaction_defs` set to True first, before letting it manage your funds for real. Here you can get free UST, LUNA etc: https://faucet.terra.money/.
 - Since the LTV/min ratios on Mirror and Anchor are defined exactly opposite each other, it may gets confusing to set the `lower_distance`, `target_distance`, `upper_distance`. I wrote some explanations, but make sure you take time to understand it.
 - For your own safety all functions are set to False by default. Enable them one by one.
-- It's recommended to run this code in a contained environment at maximum security.
 - Deposits / withdrawals of collateral as well as repayments / borrowing of debt are limited by an amount. So if your collateral loses lots of value in one day, there will be multiple deposits / repayments per day to keep your funds safe.
 - If however, your collateral gains in value and you withdraw aUST from Mirror or borrow more UST from Anchor a time cooldown (which you can define) will act as a limit. If you set the cooldown to 3, only once every 3 days collateral will be withdrawn from Mirror / more UST will be borrowed from Anchor. This decreases the risk / transaction fees when one day your collateral value spikes, just to crash the next day.
 - Since a wallet seed is required, ensure you protect it and know what you're doing while using this automation.
@@ -132,6 +132,7 @@ I made the One-Stop-Bot as much configureable as possible. You can configure wha
 1. `git clone` this repository.
 2. Rename `B_Config.py.sample` to `B_Config.py`.
 3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*.
+*  *I strongly recommend to add your seed, API keys, passwords as an environment variable. You can find out how to set this up here: https://dev.to/biplov/handling-passwords-and-secret-keys-using-environment-variables-2ei0*.
 4. Run  `pip3 install -r A_Requirements.txt`.
 5. Run the One-Stop-Bot with a crontab directly or with `python D_Scheduler.py`.
 6. Make yourself familiar with the bot by using the TESTNET first (Get free UST/LUNA here: https://faucet.terra.money/) by enabling features step-by-step.

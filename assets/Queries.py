@@ -13,38 +13,39 @@ import B_Config as config
 # Other imports
 from datetime import datetime
 from time import mktime, sleep
-from requests import get
 from re import search
+import asyncio
 
 account_address = Terra.account_address
 
 class Queries:
     if config.Debug_mode: print(f'Queries Class loaded.')
     default_logger = Logger().default_logger
+       
+    async def get_all_rates(self):
 
-    def __init__(self):
-        self.all_rates = self.get_all_rates()
-
-        
-    def get_all_rates(self):
-
-        all_rates:dict
         all_rates = {}
-        
-        all_rates['LUNA'] = Dec(str(Terra.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')).replace('uusd', ''))
 
         query = {
             "epoch_state": {},
         }
-        query_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query)
-        
-        all_rates['aUST'] = Dec(query_result['exchange_rate']) * 1000000
 
-        # Update ANC, MIR, SPEC as those prices are critical to be up-to-date
+        query_result, \
+        all_rates_uluna, \
+        MIR_pool_info, \
+        SPEC_pool_info, \
+        ANC_pool_info  \
+                 = await asyncio.gather(
+        Terra.terra_async.wasm.contract_query(Terra.mmMarket, query),
+        Terra.terra_async.market.swap_rate(Coin('uluna', 1000000), 'uusd'),
+        self.get_pool_info(Terra.Mirror_MIR_UST_Pair),
+        self.get_pool_info(Terra.Spectrum_SPEC_UST_Pair),
+        self.get_pool_info(Terra.Terraswap_ANC_UST_Pair),
+        )
 
-        MIR_pool_info = self.get_pool_info(Terra.Mirror_MIR_UST_Pair)
-        SPEC_pool_info = self.get_pool_info(Terra.Spectrum_SPEC_UST_Pair)
-        ANC_pool_info = self.get_pool_info(Terra.Terraswap_ANC_UST_Pair)
+        all_rates['uluna'] = Dec(all_rates_uluna.amount)
+
+        all_rates['aUST'] = Dec(query_result['exchange_rate']) * 1000000 
 
         all_rates['MIR'] = Dec(MIR_pool_info[1] / MIR_pool_info[0] * 1000000)
         all_rates['SPEC'] = Dec(SPEC_pool_info[1] / SPEC_pool_info[0] * 1000000)
@@ -61,18 +62,18 @@ class Queries:
 
         return all_rates
 
-    def get_fee_estimation(self):
+    async def get_fee_estimation(self):
 
-        estimation = Terra.terra.treasury.tax_cap('uusd')
+        estimation = await Terra.terra_async.treasury.tax_cap('uusd')
         fee = estimation.to_data().get('amount')
         return Dec(fee)
 
-    def get_pool_info(self, token_UST_pair_address:str):
+    async def get_pool_info(self, token_UST_pair_address:str):
 
         query = {
             "pool": {}
         }
-        query_result = Terra.terra.wasm.contract_query(token_UST_pair_address, query)
+        query_result = await Terra.terra_async.wasm.contract_query(token_UST_pair_address, query)
 
         UST_in_pool = sum(Dec(asset['amount']) for asset in query_result['assets'] if asset['info'].get('token') is None)
         token_in_pool = sum(Dec(asset['amount']) for asset in query_result['assets'] if asset['info'].get('token') is not None)
@@ -80,49 +81,49 @@ class Queries:
 
         return [token_in_pool, UST_in_pool, total_share]
 
-
-
-    def get_luna_col_multiplier(self):
+    async def get_luna_col_multiplier(self):
 
         query = {
             "collateral_price": {
                 "asset": "uluna"
             }
         }
-        query_result = Terra.terra.wasm.contract_query(Terra.Collateral_Oracle, query)
-
+        query_result = await Terra.terra_async.wasm.contract_query(Terra.Collateral_Oracle, query)
         get_luna_col_multiplier = query_result['multiplier']
-
         return Dec(get_luna_col_multiplier)
 
 
-    def get_latest_block(self):
-        result = Terra.terra.tendermint.block_info()
+    async def get_latest_block(self):
+        result = await Terra.terra_async.tendermint.block_info()
         height = result['block']['header']['height']
         return int(height)
 
-    def get_oracle_price_and_min_col_ratio(self, mAsset:str):
+    async def get_oracle_price_and_min_col_ratio(self, mAsset:str):
         oracle_price_and_min_col_ratio:list
-        query_oracle_price = {
+
+        query_oracle_price_collateral = {
             "collateral_price": {
                 "asset": mAsset
             },
         }
-        position_ids_result = Terra.terra.wasm.contract_query(Terra.Collateral_Oracle, query_oracle_price)
-
-        query_oracle_price = {
+        query_oracle_price_mint = {
             "asset_config": {
                 "asset_token": mAsset
             },
         }
-        min_col_ratio_result = Terra.terra.wasm.contract_query(Terra.Mint, query_oracle_price)
 
+        position_ids_result, \
+        min_col_ratio_result \
+        = await asyncio.gather(
+            Terra.terra_async.wasm.contract_query(Terra.Collateral_Oracle, query_oracle_price_collateral),
+            Terra.terra_async.wasm.contract_query(Terra.Mint, query_oracle_price_mint)
+        )
         oracle_price_and_min_col_ratio = [Dec(position_ids_result['rate']), Dec(min_col_ratio_result['min_collateral_ratio'])]
 
         return oracle_price_and_min_col_ratio
 
 
-    def Mirror_get_position_info(self):
+    async def Mirror_get_position_info(self):
         Mirror_position_info:list
         Mirror_position_info = []
         reserve_UST = 0
@@ -132,9 +133,15 @@ class Queries:
                 "owner_addr": account_address
             },
         }
-        position_ids_result = Terra.terra.wasm.contract_query(Terra.Mint, query_position_ids)
 
-
+        position_ids_result, \
+        luna_col_multiplier, \
+        all_rates \
+        = await asyncio.gather(
+        Terra.terra_async.wasm.contract_query(Terra.Mint, query_position_ids),
+        self.get_luna_col_multiplier(),
+        self.get_all_rates()
+        )        
 
         for position in position_ids_result['positions']:
 
@@ -155,9 +162,9 @@ class Queries:
 
             # As the mAsset is valued in UST, we convert the colateral_amount also into UST here.
             if collateral_token_denom == 'aUST':
-                collateral_amount_in_ust = collateral_amount_in_kind * self.all_rates['aUST'] / 1000000
+                collateral_amount_in_ust = collateral_amount_in_kind * all_rates['aUST'] / 1000000
             elif collateral_token_denom == 'uluna':
-                collateral_amount_in_ust = collateral_amount_in_kind * self.all_rates['LUNAs'] / 1000000
+                collateral_amount_in_ust = collateral_amount_in_kind * all_rates['LUNAs'] / 1000000
             elif collateral_token_denom == 'uusd':
                 collateral_amount_in_ust = collateral_amount_in_kind
 
@@ -169,14 +176,14 @@ class Queries:
             else:
                 mAsset_symbol = 'Not in assets.Contact_addresses.py'
 
-            oracle_price_and_min_col_ratio = self.get_oracle_price_and_min_col_ratio(mAsset_address)
+            oracle_price_and_min_col_ratio = await self.get_oracle_price_and_min_col_ratio(mAsset_address)
             oracle_price = oracle_price_and_min_col_ratio[0]
             shorted_asset_amount = oracle_price * shorted_asset_qty
 
             # If the collateral is provided in UST or aUST the min_col_ratio is as received form the query.
             # if the colalteral is Luna it is luna_col_multiplier (4/3) of the min_col_ratio
             if collateral_token_denom == 'uluna':
-                min_col_ratio = oracle_price_and_min_col_ratio[1] * Dec(self.get_luna_col_multiplier())
+                min_col_ratio = oracle_price_and_min_col_ratio[1] * Dec(luna_col_multiplier)
             else:
                 min_col_ratio = oracle_price_and_min_col_ratio[1]
 
@@ -267,81 +274,70 @@ class Queries:
 
         query_result = Terra.terra.wasm.contract_query(Terra.MirrorStaking, query)
 
-        # Sum up all claimable rewards for this account_address        
+        # Sum up all claimable rewards for this account_address
         claimable = sum(Dec(reward['pending_reward']) for reward in query_result['reward_infos'])
 
         return Dec(claimable)
 
 
-    def get_claimable_SPEC(self):
+    async def get_claimable_SPEC(self):
         claimable_SPEC_list:list
         claimable_mirrorFarm = 0
         claimable_anchorFarm = 0
         claimable_specFarm = 0
         claimable_pylonFarm = 0
 
-        latest_block = self.get_latest_block()
+        latest_block = await self.get_latest_block()
 
-        # Query for the Mirror related claimable SPEC
-        query = {
+        Mirror_SPEC_query = {
             "reward_info": {
                 "staker_addr": account_address,
                 "height": latest_block
             },
         }
-        query_result_mirrorFarm = Terra.terra.wasm.contract_query(Terra.mirrorFarm, query)
-        # print(f'mirrorFarm: {query_result_mirrorFarm}')
-        # Sum up all claimable rewards for this account_address
-        claimable_mirrorFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_mirrorFarm['reward_infos'])
 
-        # Query for the Anchor related claimable SPEC
-        query = {
+        Anchor_SPEC_query = {
             "reward_info": {
                 "staker_addr": account_address,
                 "height": latest_block
             },
         }
-        query_result_anchorFarm = Terra.terra.wasm.contract_query(Terra.anchorFarm, query)
-        # print(f'anchorFarm: {query_result_anchorFarm}')
-        # Sum up all claimable rewards for this account_address
-        claimable_anchorFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_anchorFarm['reward_infos'])
 
-        # Query for the Spec related claimable SPEC
-        query = {
+        Spectrum_SPEC_query = {
             "reward_info": {
                 "staker_addr": account_address,
                 "height": latest_block
             },
         }
-        query_result_specFarm = Terra.terra.wasm.contract_query(Terra.specFarm, query)
-        # print(f'specFarm: {query_result_specFarm}')
-        # Sum up all claimable rewards for this account_address
-        claimable_specFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_specFarm['reward_infos'])
 
-        # Query for the Pylon related claimable SPEC
-        query = {
+        Pylon_SPEC_query = {
             "reward_info": {
                 "staker_addr": account_address,
                 "height": latest_block
             },
         }
-        query_result_pylonFarm = Terra.terra.wasm.contract_query(Terra.pylonFarm, query)
-        # print(f'pylonFarm: {query_result_pylonFarm}')
-        # Sum up all claimable rewards for this account_address
-        claimable_pylonFarm = sum(Dec(reward['pending_spec_reward']) for reward in query_result_pylonFarm['reward_infos'])
 
-        # claimable_SPEC_dict = {
-        #     "claimable_mirrorFarm": Dec(claimable_mirrorFarm)/1000000,
-        #     "claimable_anchorFarm": Dec(claimable_anchorFarm)/1000000,
-        #     "claimable_specFarm": Dec(claimable_specFarm)/1000000,
-        #     "claimable_pylonFarm": Dec(claimable_pylonFarm)/1000000,
-        # }
+        query_result_mirrorFarm, \
+        query_result_anchorFarm, \
+        query_result_specFarm, \
+        query_result_pylonFarm, \
+        = await asyncio.gather(
+        Terra.terra_async.wasm.contract_query(Terra.mirrorFarm, Mirror_SPEC_query),
+        Terra.terra_async.wasm.contract_query(Terra.anchorFarm, Anchor_SPEC_query),
+        Terra.terra_async.wasm.contract_query(Terra.specFarm, Spectrum_SPEC_query),
+        Terra.terra_async.wasm.contract_query(Terra.pylonFarm, Pylon_SPEC_query),
+        )
+
+        claimable_mirrorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_mirrorFarm['reward_infos']))
+        claimable_anchorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_anchorFarm['reward_infos']))
+        claimable_specFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_specFarm['reward_infos']))
+        claimable_pylonFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_pylonFarm['reward_infos']))
 
         claimable_SPEC_list = [
-            +Dec(claimable_mirrorFarm) \
-            +Dec(claimable_anchorFarm) \
-            +Dec(claimable_specFarm) \
-            +Dec(claimable_pylonFarm),
+            +claimable_mirrorFarm \
+            +claimable_anchorFarm \
+            +claimable_specFarm \
+            +claimable_pylonFarm,
             claimable_mirrorFarm >0,
             claimable_anchorFarm >0,
             claimable_specFarm >0,
@@ -351,9 +347,9 @@ class Queries:
         return claimable_SPEC_list
 
 
-    def get_claimable_ANC(self):
+    async def get_claimable_ANC(self):
 
-        latest_block = self.get_latest_block()
+        latest_block = await self.get_latest_block()
 
         query = {
             "borrower_info": {
@@ -362,7 +358,7 @@ class Queries:
             }
         }
 
-        query_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query)
+        query_result = await Terra.terra_async.wasm.contract_query(Terra.mmMarket, query)
 
         claimable = query_result['pending_rewards']
 
@@ -438,51 +434,54 @@ class Queries:
 
         return Dec(LP_token_available)
 
-    def Anchor_get_max_ltv_ratio(self):
-        
-        # max_ltv_ratio:dict
-        # max_ltv_ratio = {}
+    async def Anchor_get_max_ltv_ratio(self):
 
         query = {
             "whitelist": {},
         }
-        query_result = Terra.terra.wasm.contract_query(Terra.mmOverseer, query)
+        query_result = await Terra.terra_async.wasm.contract_query(Terra.mmOverseer, query)
 
         return dict((elem['symbol'], Dec(elem['max_ltv'])) for elem in query_result['elems'])
 
 
-    def Anchor_get_borrow_info(self):
+    async def Anchor_get_borrow_info(self):
         Anchor_debt_info:dict
-
-        max_ltv_ratio = self.Anchor_get_max_ltv_ratio()['BETH']
 
         query_msg_borrow_limit = {
             "borrow_limit": {
                 "borrower": account_address
             },
+        }           
+        query_msg_collateral = {
+            "collaterals": {
+                "borrower": account_address
+            },
         }
-        borrow_limit_result = Terra.terra.wasm.contract_query(Terra.mmOverseer, query_msg_borrow_limit)
+        query_msg_borrower_info = {
+            "borrower_info": {
+                "borrower": account_address
+            },
+        }
+
+        Anchor_get_max_ltv_ratio, \
+        borrow_limit_result, \
+        query_msg_collateral_result, \
+        query_msg_borrower_info_result, \
+        = await asyncio.gather(
+        self.Anchor_get_max_ltv_ratio(),
+        Terra.terra_async.wasm.contract_query(Terra.mmOverseer, query_msg_borrow_limit),
+        Terra.terra_async.wasm.contract_query(Terra.mmOverseer, query_msg_collateral),
+        Terra.terra_async.wasm.contract_query(Terra.mmMarket, query_msg_borrower_info),
+        )
+
+        max_ltv_ratio = Dec(Anchor_get_max_ltv_ratio['BETH'])
 
         borrow_limit = Dec(borrow_limit_result['borrow_limit'])
 
         # Check if you actually have some collateral in Anchor
         if borrow_limit > 0:
-           
-            query_msg_collateral = {
-                "collaterals": {
-                    "borrower": account_address
-                },
-            }
-            query_msg_collateral_result = Terra.terra.wasm.contract_query(Terra.mmOverseer, query_msg_collateral)
 
-            query_msg_loan = {
-                "borrower_info": {
-                    "borrower": account_address
-                },
-            }
-            loan_amount_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query_msg_loan)
-
-            loan_amount = Dec(loan_amount_result['loan_amount'])
+            loan_amount = Dec(query_msg_borrower_info_result['loan_amount'])
 
             collateral_dict = dict((collateral[0], Dec(collateral[1])) for collateral in query_msg_collateral_result['collaterals'])
 
@@ -607,37 +606,37 @@ class Queries:
             return False
 
     def get_native_balance(self, denom:str):
-        # Todo: Return a dict with all natives to be incl in the wallet_balance dict provided
-
         balance_native = Terra.terra.bank.balance(address=account_address).to_data()
-
         return sum(Dec(item['amount']) for item in balance_native if item['denom'] == denom)
 
-    def get_non_native_balance(self, token_address):
-        # Todo: Return a dict with all natives to be incl in the wallet_balance dict provided
-        # curl 'https://bombay-mantle.terra.dev/' -H 'Accept-Encoding: gzip, deflate, br' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Connection: keep-alive' -H 'DNT: 1' -H 'Origin: https://bombay-mantle.terra.dev' --data-binary '{"query":"# Write your query or mutation here\n{\n  terra1v000amr8a59r88p33ec2kk9xqe047g7zzqqaf4: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1v000amr8a59r88p33ec2kk9xqe047g7zzqqaf4\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1u0t35drzyy0mujj8rkdyzhe264uls4ug3wdp3x\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra19mkj9nec6e3y5754tlnuz4vem7lzh4n0lc2s3l: WasmContractsContractAddressStore(\n    ContractAddress: \"terra19mkj9nec6e3y5754tlnuz4vem7lzh4n0lc2s3l\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1ajt556dpzvjwl0kl5tzku3fc3p3knkg9mkv8jl: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1ajt556dpzvjwl0kl5tzku3fc3p3knkg9mkv8jl\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1747mad58h0w4y589y3sk84r5efqdev9q4r02pc: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1747mad58h0w4y589y3sk84r5efqdev9q4r02pc\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra10llyp6v3j3her8u3ce66ragytu45kcmd9asj3u: WasmContractsContractAddressStore(\n    ContractAddress: \"terra10llyp6v3j3her8u3ce66ragytu45kcmd9asj3u\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra16vfxm98rxlc8erj4g0sj5932dvylgmdufnugk0: WasmContractsContractAddressStore(\n    ContractAddress: \"terra16vfxm98rxlc8erj4g0sj5932dvylgmdufnugk0\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1avryzxnsn2denq7p2d7ukm6nkck9s0rz2llgnc: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1avryzxnsn2denq7p2d7ukm6nkck9s0rz2llgnc\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1zeyfhurlrun6sgytqfue555e6vw2ndxt2j7jhd: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1zeyfhurlrun6sgytqfue555e6vw2ndxt2j7jhd\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra12saaecsqwxj04fn0jsv4jmdyp6gylptf5tksge: WasmContractsContractAddressStore(\n    ContractAddress: \"terra12saaecsqwxj04fn0jsv4jmdyp6gylptf5tksge\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1qk0cd8576fqf33paf40xy3rt82p7yluwtxz7qx: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1qk0cd8576fqf33paf40xy3rt82p7yluwtxz7qx\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra15dr4ah3kha68kam7a907pje9w6z2lpjpnrkd06: WasmContractsContractAddressStore(\n    ContractAddress: \"terra15dr4ah3kha68kam7a907pje9w6z2lpjpnrkd06\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1csr22xvxs6r3gkjsl7pmjkmpt39mwjsrm0e2r8: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1csr22xvxs6r3gkjsl7pmjkmpt39mwjsrm0e2r8\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1qre9crlfnulcg0m68qqywqqstplgvrzywsg3am: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1qre9crlfnulcg0m68qqywqqstplgvrzywsg3am\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1ys4dwwzaenjg2gy02mslmc96f267xvpsjat7gx: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1ys4dwwzaenjg2gy02mslmc96f267xvpsjat7gx\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra14gq9wj0tt6vu0m4ec2tkkv4ln3qrtl58lgdl2c: WasmContractsContractAddressStore(\n    ContractAddress: \"terra14gq9wj0tt6vu0m4ec2tkkv4ln3qrtl58lgdl2c\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra104tgj4gc3pp5s240a0mzqkhd3jzkn8v0u07hlf: WasmContractsContractAddressStore(\n    ContractAddress: \"terra104tgj4gc3pp5s240a0mzqkhd3jzkn8v0u07hlf\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1qg9ugndl25567u03jrr79xur2yk9d632fke3h2: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1qg9ugndl25567u03jrr79xur2yk9d632fke3h2\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra13myzfjdmvqkama2tt3v5f7quh75rv78w8kq6u6: WasmContractsContractAddressStore(\n    ContractAddress: \"terra13myzfjdmvqkama2tt3v5f7quh75rv78w8kq6u6\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra19dl29dpykvzej8rg86mjqg8h63s9cqvkknpclr: WasmContractsContractAddressStore(\n    ContractAddress: \"terra19dl29dpykvzej8rg86mjqg8h63s9cqvkknpclr\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1p50j2k5vyw3q2tgywqvxyz59z8csh9p7x8dk5m: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1p50j2k5vyw3q2tgywqvxyz59z8csh9p7x8dk5m\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1qhkjjlqq2lyf2evzserdaqx55nugksjqdpxvru: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1qhkjjlqq2lyf2evzserdaqx55nugksjqdpxvru\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1374w7fkm7tqhd9dt2r5shjk8ly2kum443uennt: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1374w7fkm7tqhd9dt2r5shjk8ly2kum443uennt\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1anw5z9u5l35vxhhqljuygmkupwmafcv0m86kum: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1anw5z9u5l35vxhhqljuygmkupwmafcv0m86kum\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra19jdmle3zl99gugmptx8auckc9c2xw7nspyxjvx: WasmContractsContractAddressStore(\n    ContractAddress: \"terra19jdmle3zl99gugmptx8auckc9c2xw7nspyxjvx\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra12s2h8vlztjwu440khpc0063p34vm7nhu25w4p9: WasmContractsContractAddressStore(\n    ContractAddress: \"terra12s2h8vlztjwu440khpc0063p34vm7nhu25w4p9\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1djnlav60utj06kk9dl7defsv8xql5qpryzvm3h: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1djnlav60utj06kk9dl7defsv8xql5qpryzvm3h\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra18yx7ff8knc98p07pdkhm3u36wufaeacv47fuha: WasmContractsContractAddressStore(\n    ContractAddress: \"terra18yx7ff8knc98p07pdkhm3u36wufaeacv47fuha\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra14vmf4tzg23fxnt9q5wavlp4wtvzzap82hdq402: WasmContractsContractAddressStore(\n    ContractAddress: \"terra14vmf4tzg23fxnt9q5wavlp4wtvzzap82hdq402\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1hvmzhnhxnyhjfnctntnn49a35w6hvygmxvjt7q: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1hvmzhnhxnyhjfnctntnn49a35w6hvygmxvjt7q\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1fdkfhgk433tar72t4edh6p6y9rmjulzc83ljuw: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1fdkfhgk433tar72t4edh6p6y9rmjulzc83ljuw\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra15t9afkpj0wnh8m74n8n2f8tspkn7r65vnru45s: WasmContractsContractAddressStore(\n    ContractAddress: \"terra15t9afkpj0wnh8m74n8n2f8tspkn7r65vnru45s\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1nslem9lgwx53rvgqwd8hgq7pepsry6yr3wsen4: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1nslem9lgwx53rvgqwd8hgq7pepsry6yr3wsen4\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1ax7mhqahj6vcqnnl675nqq2g9wghzuecy923vy: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1ax7mhqahj6vcqnnl675nqq2g9wghzuecy923vy\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1fucmfp8x4mpzsydjaxyv26hrkdg4vpdzdvf647: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1fucmfp8x4mpzsydjaxyv26hrkdg4vpdzdvf647\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1z0k7nx0vl85hwpv3e3hu2cyfkwq07fl7nqchvd: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1z0k7nx0vl85hwpv3e3hu2cyfkwq07fl7nqchvd\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra18gphn8r437p2xmjpw7a79hgsglf5y4t0x7s5ee: WasmContractsContractAddressStore(\n    ContractAddress: \"terra18gphn8r437p2xmjpw7a79hgsglf5y4t0x7s5ee\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra18py95akdje8q8aaukhx65dplh9342m0j884wt4: WasmContractsContractAddressStore(\n    ContractAddress: \"terra18py95akdje8q8aaukhx65dplh9342m0j884wt4\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1090l5p5v794dpyzr07da72cyexhuc4zag5cuer: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1090l5p5v794dpyzr07da72cyexhuc4zag5cuer\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1jr9s6cx4j637fctkvglrclvrr824vu3r2rrvj7: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1jr9s6cx4j637fctkvglrclvrr824vu3r2rrvj7\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1jyunclt6juv6g7rw0dltlr0kgaqtpq4quvyvu3: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1jyunclt6juv6g7rw0dltlr0kgaqtpq4quvyvu3\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1lqm5tutr5xcw9d5vc4457exa3ghd4sr9mzwdex: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1lqm5tutr5xcw9d5vc4457exa3ghd4sr9mzwdex\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1kvsxd94ue6f4rtchv2l6me5k07uh26s7637cza: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1kvsxd94ue6f4rtchv2l6me5k07uh26s7637cza\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1s8s39cnse493rzkmyr95esa44chc6vgztdm7gh: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1s8s39cnse493rzkmyr95esa44chc6vgztdm7gh\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1ykagvyzdmj3jcxkhavy7l84qs66haf7akqfrkc: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1ykagvyzdmj3jcxkhavy7l84qs66haf7akqfrkc\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1juwtwk5qymhz7s3hn0vx6tkqst54ud6wfjknvp: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1juwtwk5qymhz7s3hn0vx6tkqst54ud6wfjknvp\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra18xfqhtfaz2su55zmurmh02ng9lnhw0xnyplvln: WasmContractsContractAddressStore(\n    ContractAddress: \"terra18xfqhtfaz2su55zmurmh02ng9lnhw0xnyplvln\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1eq0xqc88ceuvw2ztz2a08200he8lrgvnplrcst: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1eq0xqc88ceuvw2ztz2a08200he8lrgvnplrcst\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n  terra1dy9kmlm4anr92e42mrkjwzyvfqwz66un00rwr5: WasmContractsContractAddressStore(\n    ContractAddress: \"terra1dy9kmlm4anr92e42mrkjwzyvfqwz66un00rwr5\"\n    QueryMsg: \"{\\\"balance\\\":{\\\"address\\\":\\\"terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma\\\"}}\"\n  ) {\n    Height\n    Result\n    __typename\n  }\n}\n"}' --compressed
-        # https://bombay-fcd.terra.dev/wasm/contracts/terra10llyp6v3j3her8u3ce66ragytu45kcmd9asj3u/store?query_msg={%22balance%22:{%22address%22:%22terra1h0ujhwfx9wxt9lgpk5vrzutctt3k2cue9z3qma%22}}
-        
+    async def get_non_native_balance(self, token_address): 
         query = {
             "balance": {
                 "address": account_address
             }
         }
-        query_result = Terra.terra.wasm.contract_query(token_address, query)
-        non_native_balance = Dec(query_result['balance'])
+        query_result = await Terra.terra_async.wasm.contract_query(token_address, query)
 
-        return non_native_balance
+        return Dec(query_result['balance'])
     
 
-    def get_wallet_balances(self):
-        wallet_balances:dict
-        wallet_balances = {
-            'UST' :  Dec(self.get_native_balance('uusd')),
-            'aUST' : Dec(self.get_non_native_balance(Terra.aUST_token)),
-            'LUNA' : Dec(self.get_native_balance('uluna')),
-            'MIR' :  Dec(self.get_non_native_balance(Terra.MIR_token)),
-            'SPEC' : Dec(self.get_non_native_balance(Terra.SPEC_token)),
-            'ANC' :  Dec(self.get_non_native_balance(Terra.ANC_token)),
-        }
+    async def get_wallet_balances(self):
+
+        wallet_balances = {}
+
+        balance_native, \
+        wallet_balances['aUST'], \
+        wallet_balances['MIR'], \
+        wallet_balances['SPEC'], \
+        wallet_balances['ANC'] = await asyncio.gather(
+            Terra.terra_async.bank.balance(address=account_address),
+            self.get_non_native_balance(Terra.aUST_token),
+            self.get_non_native_balance(Terra.MIR_token),
+            self.get_non_native_balance(Terra.SPEC_token),
+            self.get_non_native_balance(Terra.ANC_token),
+        )
+
+        for i in balance_native.to_data():
+            wallet_balances[i['denom']] = Dec(i['amount'])
 
         return wallet_balances

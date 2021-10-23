@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 # Terra SDK
+import asyncio
 from terra_sdk.core.coins import Coins
 from terra_sdk.core.coins import Coin
 from terra_sdk.core.wasm import MsgExecuteContract
@@ -15,7 +16,7 @@ import B_Config as config
 
 Queries_class = Queries()
 account_address = Terra.account_address
-fee_estimation = Dec(Queries_class.get_fee_estimation())
+fee_estimation = Dec(asyncio.run(Queries_class.get_fee_estimation()))
 
 class Transaction:
     if config.Debug_mode: print(f'Transactions Class loaded.')
@@ -97,8 +98,7 @@ class Transaction:
 
             else:
                 # Luna and UST are natively supported
-                coin = Coin(denom, collateral_amount_in_kind).to_data()
-                coins = Coins.from_data([coin])
+                coins = Coins([Coin(collateral_amount_in_kind, denom)])
 
                 contract = Terra.Mint
                 execute_msg={
@@ -142,8 +142,7 @@ class Transaction:
                 coins=Coins()
 
             else:
-                coin = Coin('uusd', collateral_amount_in_kind).to_data()
-                coins = Coins.from_data([coin])
+                coins = Coins([Coin(collateral_amount_in_kind, 'uusd')])
 
                 contract=Terra.Mint
                 execute_msg={
@@ -326,8 +325,7 @@ class Transaction:
 
             if amount > 0:
 
-                coin = Coin('uusd', amount).to_data()
-                coins = Coins.from_data([coin])
+                coins = Coins([Coin(amount, 'uusd')])
 
                 contract=Terra.mmMarket
                 execute_msg={
@@ -346,12 +344,12 @@ class Transaction:
             amount = int(amount + Dec(config.Safety_multiple_on_transaction_fees) * fee_estimation)
 
             # Convert amount UST into aUST for withdrawl and add a bit more for fees
-            if denom == 'UST':
+            if denom == 'uusd':
                 amount = int(amount / Queries_class.all_rates['aUST'] * 1000000)
             elif denom == 'aUST':
                 amount = amount
             else:
-                raise Exception # Todo
+                 self.default_logger.warning(f'[Script] The collateral you have here is none of those: UST, aUST. The bot cannot handle that.')
 
             contract=Terra.aTerra
             execute_msg={
@@ -373,8 +371,7 @@ class Transaction:
 
             if amount > 0:
 
-                coin = Coin('uusd', amount).to_data()
-                coins = Coins.from_data([coin])
+                coins = Coins([Coin(amount, 'uusd')])
 
                 contract=Terra.mmMarket
                 execute_msg={
@@ -422,9 +419,7 @@ class Transaction:
                     }
                 ))
 
-
-            coin = Coin('uusd', amount_UST).to_data()
-            coins = Coins.from_data([coin])
+            coins = Coins([Coin(amount_UST, 'uusd')])
 
             message.append(
                 MsgExecuteContract(
@@ -482,8 +477,7 @@ class Transaction:
                     }
                 ))
 
-            coin = Coin('uusd', amount_UST).to_data()
-            coins = Coins.from_data([coin])
+            coins = Coins([Coin(amount_UST, 'uusd')])
 
             message.append(
                 MsgExecuteContract(
@@ -539,8 +533,7 @@ class Transaction:
                     }
                 ))
 
-            coin = Coin('uusd', amount_UST).to_data()
-            coins = Coins.from_data([coin])
+            coins = Coins([Coin(amount_UST, 'uusd')])
 
             message.append(
                 MsgExecuteContract(

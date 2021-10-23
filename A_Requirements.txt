@@ -1,2 +1,2 @@
-terra-sdk@git+https://github.com/terra-money/terra-sdk-python.git@0e38e63133d766bfb993cf559a70005f307f3150
-requests
+terra-sdk@git+https://github.com/terra-money/terra-sdk-python.git@e0e4f03f32485cd75a308a3a04ddc01f8f670547
+httpx

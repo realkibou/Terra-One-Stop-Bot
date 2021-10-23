@@ -31,40 +31,47 @@ import B_Config as config
 # Other imports
 from datetime import datetime, timedelta, date
 from time import time
+from copy import deepcopy
+import asyncio
 
 Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Prettify_class, Notifications_class = Transaction(), Queries(), Cooldown(), Logger(), Terra, Prettify(), Notifications()
 default_logger, report_logger, report_array = Logger_class.default_logger, Logger_class.report_logger, Logger_class.report_array
 
-def main():
+async def main():
 
     if config.Debug_mode: print(f'main() started.')
 
     begin_time = time()
 
-    wallet_balance = Queries_class.get_wallet_balances()
-    general_estimated_tx_fee = Dec(Queries_class.get_fee_estimation())
+    tax_rate, \
+    cooldowns, \
+    Mirror_position_info, \
+    Anchor_borrow_info, \
+    all_rates,\
+    wallet_balance, \
+    general_estimated_tx_fee \
+        = await asyncio.gather(
+    Terra.terra_async.treasury.tax_rate(),
+    Cooldown_class.read_cooldown(),
+    Queries_class.Mirror_get_position_info(),
+    Queries_class.Anchor_get_borrow_info(),
+    Queries_class.get_all_rates(),
+    Queries_class.get_wallet_balances(),
+    Queries_class.get_fee_estimation()
+    )
 
-    if wallet_balance['UST'] < general_estimated_tx_fee:
-        default_logger.warning(f'[Script] YOU NEED TO ACT! Your wallet balance of {(wallet_balance["UST"].__float__() / 1000000):.2f} UST is too low to execute any transaction.')
+    general_estimated_tx_fee = Dec(general_estimated_tx_fee)
+
+    if wallet_balance['uusd'] < general_estimated_tx_fee:
+        default_logger.warning(f'[Script] YOU NEED TO ACT! Your wallet balance of {(wallet_balance["uusd"].__float__() / 1000000):.2f} UST is too low to execute any transaction.')
         return False
     
     datetime_now = datetime.now()
-
-    cooldowns = Cooldown_class.read_cooldown()
     status_update = False
-
-    claimable_MIR = claimable_SPEC = claimable_ANC = value_of_SPEC_LP_token =available_ANC_LP_token_for_withdrawal = value_of_ANC_LP_token = 0
-
-    Mirror_position_info = Queries_class.Mirror_get_position_info()
-    Anchor_borrow_info = Queries_class.Anchor_get_borrow_info()
-    wallet_balance = Queries_class.get_wallet_balances()
-    all_rates = Queries_class.get_all_rates()
-    tax_rate = Terra.terra.treasury.tax_rate()
-    
     action_dict = {'MIR' : 'none','SPEC' : 'none','ANC' : 'none', }
+    claimable_MIR = claimable_SPEC = claimable_ANC = value_of_SPEC_LP_token =available_ANC_LP_token_for_withdrawal = value_of_ANC_LP_token = 0
+    wallet_balance_before = deepcopy(wallet_balance)
 
-    
-    wallet_balance_before = Queries_class.get_wallet_balances()
     default_logger.debug(f'Wallet_balance_before: {Prettify_class.dict_value_convert_dec_to_float(wallet_balance_before, True)}')
 
     # default_logger.debug(f'------------------------------------------\n'
@@ -75,7 +82,7 @@ def main():
     if config.MIR_claim_and_deposit_in_LP:
         if cooldowns.get('withdraw_MIR_from_pool') is None or cooldowns['withdraw_MIR_from_pool'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
-            if wallet_balance['UST'] > general_estimated_tx_fee:
+            if wallet_balance['uusd'] > general_estimated_tx_fee:
                 available_MIR_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.mirrorFarm, Terra_class.MIR_token)
                 value_of_MIR_LP_token = all_rates['MIR-TOKEN-PER-SHARE'] * available_MIR_LP_token_for_withdrawal * all_rates['MIR']/1000000 \
                                         + all_rates['MIR-UST-PER-SHARE'] * available_MIR_LP_token_for_withdrawal
@@ -94,7 +101,7 @@ def main():
                                 # Mark for sell
                                 action_dict['MIR'] = 'sell'
                                 # Update UST balance in wallet
-                                wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                             else:
                                 default_logger.warning(f'[MIR LP Withdrawal] Failed TX: {withdraw_MIR_from_pool_tx}.\n'
                                                     f'[MIR LP Withdrawal] Reason: {withdraw_MIR_from_pool_tx_status}')
@@ -106,7 +113,7 @@ def main():
                 else:
                     default_logger.debug(f'[MIR LP Withdrawal] Skipped because minimum price of MIR ({config.MIR_min_price}) not exceeded ({(all_rates["MIR"].__float__()/1000000):.2f}).')
             else:
-                default_logger.warning(f'[MIR LP Withdrawal] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                default_logger.warning(f'[MIR LP Withdrawal] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
         else:
             default_logger.debug(f'[MIR LP Withdrawal] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["withdraw_MIR_from_pool"]}).')
@@ -117,7 +124,7 @@ def main():
     if config.SPEC_claim_and_deposit_in_LP:
         if cooldowns.get('withdraw_SPEC_from_pool') is None or cooldowns['withdraw_SPEC_from_pool'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
-            if wallet_balance['UST'] > general_estimated_tx_fee:
+            if wallet_balance['uusd'] > general_estimated_tx_fee:
                 available_SPEC_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.specFarm, Terra_class.SPEC_token)
                 value_of_SPEC_LP_token = all_rates['SPEC-TOKEN-PER-SHARE'] * available_SPEC_LP_token_for_withdrawal * all_rates['SPEC']/1000000 \
                                         + all_rates['SPEC-UST-PER-SHARE'] * available_SPEC_LP_token_for_withdrawal
@@ -136,7 +143,7 @@ def main():
                                 # Mark for sell
                                 action_dict['SPEC'] = 'sell'
                                 # Update UST balance in wallet
-                                wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                             else:
                                 default_logger.warning(f'[SPEC LP Withdrawal] Failed TX: {withdraw_SPEC_from_pool_tx}.\n'
                                                     f'[SPEC LP Withdrawal] Reason: {withdraw_SPEC_from_pool_tx_status}')
@@ -148,7 +155,7 @@ def main():
                 else:
                     default_logger.debug(f'[SPEC LP Withdrawal] Skipped because minimum price of SPEC ({config.SPEC_min_price}) not exceeded ({(all_rates["SPEC"].__float__()/1000000):.2f}).')
             else:
-                default_logger.warning(f'[SPEC LP Withdrawal] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                default_logger.warning(f'[SPEC LP Withdrawal] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
         else:
             default_logger.debug(f'[SPEC LP Withdrawal] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["withdraw_SPEC_from_pool"]}).')
@@ -160,7 +167,7 @@ def main():
     if config.ANC_claim_and_deposit_in_LP:
         if cooldowns.get('withdraw_ANC_from_pool') is None or cooldowns['withdraw_ANC_from_pool'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
-            if wallet_balance['UST'] > general_estimated_tx_fee:
+            if wallet_balance['uusd'] > general_estimated_tx_fee:
                 available_ANC_LP_token_for_withdrawal = Queries_class.get_available_LP_token_for_withdrawal(Terra_class.anchorFarm, Terra_class.ANC_token)
                 value_of_ANC_LP_token = all_rates['ANC-TOKEN-PER-SHARE'] * available_ANC_LP_token_for_withdrawal * all_rates['ANC']/1000000 \
                                         + all_rates['ANC-UST-PER-SHARE'] * available_ANC_LP_token_for_withdrawal
@@ -179,7 +186,7 @@ def main():
                                 # Mark for sell
                                 action_dict['ANC'] = 'sell'
                                 # Update UST balance in wallet
-                                wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                             else:
                                 default_logger.warning(f'[ANC LP Withdrawal] Failed TX: {withdraw_ANC_from_pool_tx}.\n'
                                                     f'[ANC LP Withdrawal] Reason: {withdraw_ANC_from_pool_tx_status}')
@@ -191,7 +198,7 @@ def main():
                 else:
                     default_logger.debug(f'[ANC LP Withdrawal] Skipped because minimum price of ANC ({config.ANC_min_price}) not exceeded ({(all_rates["ANC"].__float__()/1000000):.2f}).')
             else:
-                default_logger.warning(f'[ANC LP Withdrawal] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                default_logger.warning(f'[ANC LP Withdrawal] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
         else:
             default_logger.debug(f'[ANC LP Withdrawal] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["withdraw_ANC_from_pool"]}).')
@@ -208,7 +215,7 @@ def main():
     if config.MIR_claim_and_sell_token or config.MIR_claim_and_deposit_in_LP:
         if cooldowns.get('claim_MIR') is None or cooldowns['claim_MIR'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
-            if wallet_balance['UST'] > general_estimated_tx_fee:
+            if wallet_balance['uusd'] > general_estimated_tx_fee:
                 claimable_MIR = Queries_class.get_claimable_MIR()
                 # Check if there is any token claimable
                 if claimable_MIR > 0:
@@ -226,7 +233,7 @@ def main():
                                 # Mark for sale
                                 action_dict['MIR'] = 'sell'
                                 # Update UST balance in wallet
-                                wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                             else:
                                 default_logger.warning(f'[MIR Claim] Failed TX: {claim_MIR_tx}.\n'
                                                     f'[MIR Claim] Reason: {claim_MIR_tx_status}')
@@ -236,7 +243,7 @@ def main():
                         elif config.MIR_claim_and_deposit_in_LP:
                             # Check if enough UST is available to actually deposit it later
                             UST_to_be_deposited_with_MIR = claimable_MIR * (all_rates['MIR'] + tax_rate)
-                            if wallet_balance['UST'] > UST_to_be_deposited_with_MIR:
+                            if wallet_balance['uusd'] > UST_to_be_deposited_with_MIR:
                                 # Claim and mark for deposit
                                 claim_MIR_tx = Transaction_class.claim_MIR()
                                 claim_MIR_tx_status = Queries_class.get_status_of_tx(claim_MIR_tx)
@@ -246,7 +253,7 @@ def main():
                                     action_dict['MIR'] = 'deposit'
                                     report_logger.info(f'[MIR Claim] {(claimable_MIR.__float__()/1000000):.2f} MIR have been claimed to be deposited.')
                                     # Update UST balance in wallet
-                                    wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                    wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                                 else:
                                     default_logger.warning(f'[MIR Claim] Failed TX: {claim_MIR_tx}.\n'
                                                     f'[MIR Claim] Reason: {claim_MIR_tx_status}')
@@ -254,13 +261,13 @@ def main():
                             # Not enough UST in the wallet to deposit later. Check if allowed to take from Anchor Earn.
                             elif config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP:
                                 # Check if enough in Anchor Earn to withdraw
-                                if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['UST']) > UST_to_be_deposited_with_MIR:
+                                if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd']) > UST_to_be_deposited_with_MIR:
                                     # Withdraw from Anchor Earn
-                                    claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_MIR - wallet_balance['UST'], 'UST')
+                                    claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_MIR - wallet_balance['uusd'], 'uusd')
                                     claim_Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(claim_Anchor_withdraw_UST_from_Earn_tx)
                                     if claim_Anchor_withdraw_UST_from_Earn_tx_status:
                                         # ! This can result in a withdraw from Anchor Earn three times (MIR, SPEC, ANC) if you balance is not enough. There is no cumulated withdraw.
-                                        report_logger.info(f'[MIR Claim] No enought UST balance to depoit later with MIR, so {(UST_to_be_deposited_with_MIR.__float__() - wallet_balance["UST"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
+                                        report_logger.info(f'[MIR Claim] No enought UST balance to depoit later with MIR, so {(UST_to_be_deposited_with_MIR.__float__() - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
                                         # Claim and mark for deposit
                                         claim_MIR_tx = Transaction_class.claim_MIR()
                                         claim_MIR_tx_status = Queries_class.get_status_of_tx(claim_MIR_tx)
@@ -270,7 +277,7 @@ def main():
                                             action_dict['MIR'] = 'deposit'
                                             report_logger.info(f'[MIR Claim] {(claimable_MIR.__float__()/1000000):.2f} MIR have been claimed to be deposited.')
                                             # Update UST balance in wallet
-                                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                                         else:
                                             default_logger.warning(f'[MIR Claim] Failed TX: {claim_MIR_tx}.\n'
                                                             f'[MIR Claim] Reason: {claim_MIR_tx_status}')
@@ -280,9 +287,9 @@ def main():
                                                 f'[MIR Claim] Reason: {claim_Anchor_withdraw_UST_from_Earn_tx_status}')
                                         cooldowns['Anchor_withdraw_UST_from_Earn'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
                                 else:
-                                    default_logger.warning(f'[MIR Claim] Skipped because not enough UST/aUST ({(wallet_balance["UST"].__float__() / 1000000):.2f})/({(wallet_balance["aUST"].__float__() / 1000000):.2f} in wallet to be deposited with MIR later.')
+                                    default_logger.warning(f'[MIR Claim] Skipped because not enough UST/aUST ({(wallet_balance["uusd"].__float__() / 1000000):.2f})/({(wallet_balance["aUST"].__float__() / 1000000):.2f} in wallet to be deposited with MIR later.')
                             else:
-                                default_logger.warning(f'[MIR Claim] Skipped because not enough UST ({(wallet_balance["UST"].__float__() / 1000000):.2f}) in wallet to be deposited with MIR later and not enabled to withdraw from Anchor Earn ({config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP}).')
+                                default_logger.warning(f'[MIR Claim] Skipped because not enough UST ({(wallet_balance["uusd"].__float__() / 1000000):.2f}) in wallet to be deposited with MIR later and not enabled to withdraw from Anchor Earn ({config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP}).')
                         else:
                             default_logger.debug(f'[MIR Claim] Minimum price ({config.MIR_min_price}) not exceeded for sale ({(all_rates["MIR"].__float__()/1000000):.2f}) and a deposit is not enabled ({config.MIR_claim_and_deposit_in_LP}).')
                     else:
@@ -290,7 +297,7 @@ def main():
                 else:
                     default_logger.debug(f'[MIR Claim] Skipped because no claimable MIR ({(claimable_MIR.__float__()/1000000):.0f}).')
             else:
-                default_logger.warning(f'[MIR Claim] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                default_logger.warning(f'[MIR Claim] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
         else:
             default_logger.debug(f'[MIR Claim] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["claim_MIR"]}).')
@@ -303,8 +310,8 @@ def main():
     if config.SPEC_claim_and_sell_token or config.SPEC_claim_and_deposit_in_LP:
         if cooldowns.get('claim_SPEC') is None or cooldowns['claim_SPEC'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
-            if wallet_balance['UST'] > general_estimated_tx_fee:
-                claimable_SPEC_list = Queries_class.get_claimable_SPEC()
+            if wallet_balance['uusd'] > general_estimated_tx_fee:
+                claimable_SPEC_list = await Queries_class.get_claimable_SPEC()
                 claimable_SPEC = claimable_SPEC_list[0]
                 # Check if there is any token claimable
                 if claimable_SPEC > 0:
@@ -322,7 +329,7 @@ def main():
                                 # Mark for sale
                                 action_dict['SPEC'] = 'sell'
                                 # Update UST balance in wallet
-                                wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                             else:
                                 default_logger.warning(f'[SPEC Claim] Failed TX: {claim_SPEC_tx}.\n'
                                                     f'[SPEC Claim] Reason: {claim_SPEC_tx_status}')
@@ -331,7 +338,7 @@ def main():
                         elif config.SPEC_claim_and_deposit_in_LP:
                             # Check if enough UST is available to actually deposit it later
                             UST_to_be_deposited_with_SPEC = claimable_SPEC * (all_rates['SPEC'] + tax_rate)
-                            if wallet_balance['UST'] > UST_to_be_deposited_with_SPEC:
+                            if wallet_balance['uusd'] > UST_to_be_deposited_with_SPEC:
                                 # Claim and mark for deposit
                                 claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
                                 claim_SPEC_tx_status = Queries_class.get_status_of_tx(claim_SPEC_tx)
@@ -341,7 +348,7 @@ def main():
                                     action_dict['SPEC'] = 'deposit'
                                     report_logger.info(f'[SPEC Claim] {(claimable_SPEC.__float__()/1000000):.2f} SPEC have been claimed to be deposited.')
                                     # Update UST balance in wallet
-                                    wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                    wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                                 else:
                                     default_logger.warning(f'[SPEC Claim] Failed TX: {claim_SPEC_tx}.\n'
                                                     f'[SPEC Claim] Reason: {claim_SPEC_tx_status}')
@@ -349,13 +356,13 @@ def main():
                             # Not enough UST in the wallet to deposit later. Check if allowed to take from Anchor Earn.
                             elif config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP:
                                 # Check if enough in Anchor Earn to withdraw
-                                if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['UST'])> UST_to_be_deposited_with_SPEC:
+                                if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd'])> UST_to_be_deposited_with_SPEC:
                                     # Withdraw from Anchor Earn
-                                    claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_SPEC - wallet_balance['UST'], 'UST')
+                                    claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_SPEC - wallet_balance['uusd'], 'uusd')
                                     claim_Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(claim_Anchor_withdraw_UST_from_Earn_tx)
                                     if claim_Anchor_withdraw_UST_from_Earn_tx_status:
                                         # ! This can result in a withdraw from Anchor Earn three times (MIR, SPEC, ANC) if you balance is not enough. There is no cumulated withdraw.
-                                        report_logger.info(f'[SPEC Claim] No enought UST balance to depoit later with SPEC, so {(UST_to_be_deposited_with_SPEC.__float__() - wallet_balance["UST"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
+                                        report_logger.info(f'[SPEC Claim] No enought UST balance to depoit later with SPEC, so {(UST_to_be_deposited_with_SPEC.__float__() - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
                                         # Claim and mark for deposit
                                         claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
                                         claim_SPEC_tx_status = Queries_class.get_status_of_tx(claim_SPEC_tx)
@@ -365,7 +372,7 @@ def main():
                                             action_dict['SPEC'] = 'deposit'
                                             report_logger.info(f'[SPEC Claim] {(claimable_SPEC.__float__()/1000000):.2f} SPEC have been claimed to be deposited.')
                                             # Update UST balance in wallet
-                                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                                         else:
                                             default_logger.warning(f'[SPEC Claim] Failed TX: {claim_SPEC_tx}.\n'
                                                             f'[SPEC Claim] Reason: {claim_SPEC_tx_status}')
@@ -375,9 +382,9 @@ def main():
                                                 f'[SPEC Claim] Reason: {claim_Anchor_withdraw_UST_from_Earn_tx_status}')
                                         cooldowns['Anchor_withdraw_UST_from_Earn'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
                                 else:
-                                    default_logger.warning(f'[SPEC Claim] Skipped because not enough UST/aUST ({(wallet_balance["UST"].__float__() / 1000000):.2f})/({(wallet_balance["aUST"].__float__() / 1000000):.2f} in wallet to be deposited with SPEC later.')
+                                    default_logger.warning(f'[SPEC Claim] Skipped because not enough UST/aUST ({(wallet_balance["uusd"].__float__() / 1000000):.2f})/({(wallet_balance["aUST"].__float__() / 1000000):.2f} in wallet to be deposited with SPEC later.')
                             else:
-                                default_logger.warning(f'[SPEC Claim] Skipped because not enough UST ({(wallet_balance["UST"].__float__() / 1000000):.2f}) in wallet to be deposited with SPEC later and not enabled to withdraw from Anchor Earn ({config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP}).')
+                                default_logger.warning(f'[SPEC Claim] Skipped because not enough UST ({(wallet_balance["uusd"].__float__() / 1000000):.2f}) in wallet to be deposited with SPEC later and not enabled to withdraw from Anchor Earn ({config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP}).')
                         else:
                             default_logger.debug(f'[SPEC Claim] Minimum price ({config.SPEC_min_price}) not exceeded for sale ({(all_rates["SPEC"].__float__()/1000000):.2f}) and a deposit is not enabled ({config.SPEC_claim_and_deposit_in_LP}).')
                     else:
@@ -385,7 +392,7 @@ def main():
                 else:
                     default_logger.debug(f'[SPEC Claim] Skipped because no claimable SPEC ({(claimable_SPEC.__float__()/1000000):.0f}).')
             else:
-                default_logger.warning(f'[SPEC Claim] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                default_logger.warning(f'[SPEC Claim] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
         else:
             default_logger.debug(f'[SPEC Claim] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["claim_SPEC"]}).')
@@ -398,8 +405,8 @@ def main():
     if config.ANC_claim_and_sell_token or config.ANC_claim_and_deposit_in_LP:
         if cooldowns.get('claim_ANC') is None or cooldowns['claim_ANC'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
-            if wallet_balance['UST'] > general_estimated_tx_fee:
-                claimable_ANC = Queries_class.get_claimable_ANC()
+            if wallet_balance['uusd'] > general_estimated_tx_fee:
+                claimable_ANC = await Queries_class.get_claimable_ANC()
                 # Check if there is any token claimable
                 if claimable_ANC > 0:
                     value_of_ANC_claim = Queries_class.simulate_Token_Swap(claimable_ANC, Terra_class.Terraswap_ANC_UST_Pair, Terra_class.ANC_token)
@@ -416,7 +423,7 @@ def main():
                                 # Mark for sale
                                 action_dict['ANC'] = 'sell'
                                 # Update UST balance in wallet
-                                wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                             else:
                                 default_logger.warning(f'[ANC Claim] Failed TX: {claim_ANC_tx}.\n'
                                                     f'[ANC Claim] Reason: {claim_ANC_tx_status}')
@@ -425,7 +432,7 @@ def main():
                         elif config.ANC_claim_and_deposit_in_LP:
                             # Check if enough UST is available to actually deposit it later
                             UST_to_be_deposited_with_ANC = claimable_ANC * (all_rates['ANC'] + tax_rate)
-                            if wallet_balance['UST'] > UST_to_be_deposited_with_ANC:
+                            if wallet_balance['uusd'] > UST_to_be_deposited_with_ANC:
                                 # Claim and mark for deposit
                                 claim_ANC_tx = Transaction_class.claim_ANC()
                                 claim_ANC_tx_status = Queries_class.get_status_of_tx(claim_ANC_tx)
@@ -435,7 +442,7 @@ def main():
                                     action_dict['ANC'] = 'deposit'
                                     report_logger.info(f'[ANC Claim] {(claimable_ANC.__float__()/1000000):.2f} ANC have been claimed to be deposited.')
                                     # Update UST balance in wallet
-                                    wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                    wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                                 else:
                                     default_logger.warning(f'[ANC Claim] Failed TX: {claim_ANC_tx}.\n'
                                                     f'[ANC Claim] Reason: {claim_ANC_tx_status}')
@@ -443,13 +450,13 @@ def main():
                             # Not enough UST in the wallet to deposit later. Check if allowed to take from Anchor Earn.
                             elif config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP:
                                 # Check if enough in Anchor Earn to withdraw
-                                if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['UST']) > UST_to_be_deposited_with_ANC:
+                                if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd']) > UST_to_be_deposited_with_ANC:
                                     # Withdraw from Anchor Earn
-                                    claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_ANC - wallet_balance['UST'], 'UST')
+                                    claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_ANC - wallet_balance['uusd'], 'uusd')
                                     claim_Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(claim_Anchor_withdraw_UST_from_Earn_tx)
                                     if claim_Anchor_withdraw_UST_from_Earn_tx_status:
                                         # ! This can result in a withdraw from Anchor Earn three times (MIR, SPEC, ANC) if you balance is not enough. There is no cumulated withdraw.
-                                        report_logger.info(f'[ANC Claim] No enought UST balance to depoit later with ANC, so {(UST_to_be_deposited_with_ANC.__float__() - wallet_balance["UST"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
+                                        report_logger.info(f'[ANC Claim] No enought UST balance to depoit later with ANC, so {(UST_to_be_deposited_with_ANC.__float__() - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
                                         # Claim and mark for deposit
                                         claim_ANC_tx = Transaction_class.claim_ANC()
                                         claim_ANC_tx_status = Queries_class.get_status_of_tx(claim_ANC_tx)
@@ -459,7 +466,7 @@ def main():
                                             action_dict['ANC'] = 'deposit'
                                             report_logger.info(f'[ANC Claim] {(claimable_ANC.__float__()/1000000):.2f} ANC have been claimed to be deposited.')
                                             # Update UST balance in wallet
-                                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                                         else:
                                             default_logger.warning(f'[ANC Claim] Failed TX: {claim_ANC_tx}.\n'
                                                             f'[ANC Claim] Reason: {claim_ANC_tx_status}')
@@ -469,9 +476,9 @@ def main():
                                                 f'[ANC Claim] Reason: {claim_Anchor_withdraw_UST_from_Earn_tx_status}')
                                         cooldowns['Anchor_withdraw_UST_from_Earn'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
                                 else:
-                                    default_logger.warning(f'[ANC Claim] Skipped because not enough UST/aUST ({(wallet_balance["UST"].__float__() / 1000000):.2f})/({(wallet_balance["aUST"].__float__() / 1000000):.2f} in wallet to be deposited with ANC later.')
+                                    default_logger.warning(f'[ANC Claim] Skipped because not enough UST/aUST ({(wallet_balance["uusd"].__float__() / 1000000):.2f})/({(wallet_balance["aUST"].__float__() / 1000000):.2f} in wallet to be deposited with ANC later.')
                             else:
-                                default_logger.warning(f'[ANC Claim] Skipped because not enough UST ({(wallet_balance["UST"].__float__() / 1000000):.2f}) in wallet to be deposited with ANC later and not enabled to withdraw from Anchor Earn ({config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP}).')
+                                default_logger.warning(f'[ANC Claim] Skipped because not enough UST ({(wallet_balance["uusd"].__float__() / 1000000):.2f}) in wallet to be deposited with ANC later and not enabled to withdraw from Anchor Earn ({config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP}).')
                         else:
                             default_logger.debug(f'[ANC Claim] Minimum price ({config.ANC_min_price}) not exceeded for sale ({(all_rates["ANC"].__float__()/1000000):.2f}) and a deposit is not enabled ({config.ANC_claim_and_deposit_in_LP}).')
                     else:
@@ -479,7 +486,7 @@ def main():
                 else:
                     default_logger.debug(f'[ANC Claim] Skipped because no claimable ANC ({(claimable_ANC.__float__()/1000000):.0f}).')
             else:
-                default_logger.warning(f'[ANC Claim] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                default_logger.warning(f'[ANC Claim] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
         else:
             default_logger.debug(f'[ANC Claim] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["claim_ANC"]}).')
@@ -494,7 +501,7 @@ def main():
     if config.Mirror_claim_unlocked_UST:
         if cooldowns.get('Mirror_claim_unlocked_UST') is None or cooldowns['Mirror_claim_unlocked_UST'] <= datetime_now:
             # Check if there is enough UST balance in the wallet to pay the transaction fees
-            if wallet_balance['UST'] > general_estimated_tx_fee:
+            if wallet_balance['uusd'] > general_estimated_tx_fee:
                 claimable_UST = Queries_class.Mirror_get_claimable_UST(Mirror_position_info)
                 # Check if there is any token claimable
                 if claimable_UST > 0:
@@ -507,7 +514,7 @@ def main():
                             default_logger.debug(f'[Mirror Claim UST] Success TX: {Mirror_claim_unlocked_UST_tx}')
                             report_logger.info(f'[Mirror Claim UST] {(claimable_UST.__float__()/1000000):.2f} UST have been claimed from your Mirror Shorts.')
                             # Update UST balance in wallet
-                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                         else:
                             default_logger.warning(f'[Mirror Claim UST] Failed TX: {Mirror_claim_unlocked_UST_tx}.\n'
                                                 f'[Mirror Claim UST] Reason: {Mirror_claim_unlocked_UST_tx_status}')
@@ -517,13 +524,13 @@ def main():
                 else:
                     default_logger.debug(f'[Mirror Claim UST] Skipped because no UST to claim ({(claimable_UST.__float__()/1000000):.0f}).')
             else:
-                default_logger.warning(f'[Mirror Claim UST] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                default_logger.warning(f'[Mirror Claim UST] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
         else:
             default_logger.debug(f'[Mirror Claim UST] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["Mirror_claim_unlocked_UST"]}).')
     else:
         default_logger.debug(
-            f'[Mirror Claim UST] Skipped because disabled by config ({config.Mirror_claim_unlocked_UST}) or insufficent funds ({(wallet_balance["UST"].__float__() - general_estimated_tx_fee.__float__()):.2f}).')
+            f'[Mirror Claim UST] Skipped because disabled by config ({config.Mirror_claim_unlocked_UST}) or insufficent funds ({(wallet_balance["uusd"].__float__() - general_estimated_tx_fee.__float__()):.2f}).')
 
     # default_logger.debug(f'---------------------------------------\n'
     #                     f'------------ SELL SECTION -------------\n'
@@ -534,7 +541,7 @@ def main():
         if cooldowns.get('sell_MIR') is None or cooldowns['sell_MIR'] <= datetime_now:
             if action_dict['MIR'] == 'sell':
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
-                if wallet_balance['UST'] > general_estimated_tx_fee:
+                if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to sell
                     wallet_balance['MIR'] = Queries_class.get_non_native_balance(Terra_class.MIR_token)
                     default_logger.debug(f'[MIR Sell] Updated MIR balance {(wallet_balance["MIR"].__float__()/1000000)}')
@@ -547,7 +554,7 @@ def main():
                             default_logger.debug(f'[MIR Sell] Success TX: {sell_MIR_tx}')
                             report_logger.info(f'[MIR Sell] {(MIR_to_be_sold.__float__()/1000000):.2f} MIR have been sold for {(MIR_to_be_sold.__float__()/1000000 * all_rates["MIR"].__float__()/1000000):.2f} UST total.')
                             # Update UST balance in wallet
-                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                         else:
                             default_logger.warning(f'[MIR Sell] Failed TX: {sell_MIR_tx}.\n'
                                             f'[MIR Sell] Reason: {sell_MIR_tx_status}')
@@ -555,7 +562,7 @@ def main():
                     else:
                         default_logger.debug(f'[MIR Sell] Skipped because no MIR ({(MIR_to_be_sold.__float__()/1000000):.0f}) to sell.')
                 else:
-                    default_logger.warning(f'[MIR Sell] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                    default_logger.warning(f'[MIR Sell] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                     return False
             else:
                 default_logger.debug(f'[MIR Sell] Skipped because no MIR marked to be sold ({action_dict["MIR"]}).')
@@ -571,7 +578,7 @@ def main():
         if cooldowns.get('sell_SPEC') is None or cooldowns['sell_SPEC'] <= datetime_now:
             if action_dict['SPEC'] == 'sell':
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
-                if wallet_balance['UST'] > general_estimated_tx_fee:
+                if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to sell
                     wallet_balance['SPEC'] = Queries_class.get_non_native_balance(Terra_class.SPEC_token)
                     default_logger.debug(f'[SPEC Sell] Updated SPEC balance {(wallet_balance["SPEC"].__float__()/1000000)}')
@@ -584,7 +591,7 @@ def main():
                             default_logger.debug(f'[SPEC Sell] Success TX: {sell_SPEC_tx}')
                             report_logger.info(f'[SPEC Sell] {(SPEC_to_be_sold.__float__()/1000000):.2f} SPEC have been sold for {(SPEC_to_be_sold.__float__() / 1000000 * all_rates["SPEC"].__float__()/1000000):.2f} UST total.')
                             # Update UST balance in wallet
-                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                         else:
                             default_logger.warning(f'[SPEC Sell] Failed TX: {sell_SPEC_tx}.\n'
                                             f'[SPEC Sell] Reason: {sell_SPEC_tx_status}')
@@ -592,7 +599,7 @@ def main():
                     else:
                         default_logger.debug(f'[SPEC Sell] Skipped because no SPEC ({(SPEC_to_be_sold.__float__()/1000000):.0f}) to sell.')
                 else:
-                    default_logger.warning(f'[SPEC Sell] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                    default_logger.warning(f'[SPEC Sell] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                     return False
             else:
                 default_logger.debug(f'[SPEC Sell] Skipped because no SPEC marked to be sold ({action_dict["SPEC"]}).')
@@ -606,7 +613,7 @@ def main():
         if cooldowns.get('sell_ANC') is None or cooldowns['sell_ANC'] <= datetime_now:
             if action_dict['ANC'] == 'sell':
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
-                if wallet_balance['UST'] > general_estimated_tx_fee:
+                if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to sell
                     wallet_balance['ANC'] = Queries_class.get_non_native_balance(Terra_class.ANC_token)
                     default_logger.debug(f'[ANC Sell] Updated ANC balance {(wallet_balance["ANC"].__float__()/1000000)}')
@@ -619,7 +626,7 @@ def main():
                             default_logger.debug(f'[ANC Sell] Success TX: {sell_ANC_tx}')
                             report_logger.info(f'[ANC Sell] {(ANC_to_be_sold.__float__()/1000000):.2f} ANC have been sold for {(ANC_to_be_sold.__float__()/1000000 * all_rates["ANC"].__float__()/1000000):.2f} UST total.')
                             # Update UST balance in wallet
-                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                         else:
                             default_logger.warning(f'[ANC Sell] Failed TX: {sell_ANC_tx}.\n'
                                             f'[ANC Sell] Reason: {sell_ANC_tx_status}')
@@ -627,7 +634,7 @@ def main():
                     else:
                         default_logger.debug(f'[ANC Sell] Skipped because no ANC ({(ANC_to_be_sold.__float__()/1000000):.0f}) to sell.')
                 else:
-                    default_logger.warning(f'[ANC Sell] Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                    default_logger.warning(f'[ANC Sell] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                     return False
             else:
                 default_logger.debug(f'[ANC Sell] Skipped because no ANC marked to be sold ({action_dict["ANC"]}).')
@@ -646,7 +653,7 @@ def main():
         if cooldowns.get('deposit_MIR_in_pool') is None or cooldowns['deposit_MIR_in_pool'] <= datetime_now:
             if action_dict['MIR'] == 'deposit':
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
-                if wallet_balance['UST'] > general_estimated_tx_fee:
+                if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to deposit
                     wallet_balance['MIR'] = Queries_class.get_non_native_balance(Terra_class.MIR_token)
                     MIR_to_be_deposited = wallet_balance['MIR'] - wallet_balance_before['MIR']
@@ -659,7 +666,7 @@ def main():
                             default_logger.debug(f'[MIR LP Deposit] Success TX: {deposit_MIR_tx}')
                             report_logger.info(f'[MIR LP Deposit] {(MIR_to_be_deposited.__float__()/1000000):.2f} MIR and {(UST_to_be_deposited_with_MIR.__float__()/1000000):.2f} UST have been deposited to LP.')
                             # Update UST balance in wallet
-                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                         else:
                             default_logger.warning(f'[MIR LP Deposit] Failed TX: {deposit_MIR_tx}.\n'
                                             f'[MIR LP Deposit] Reason: {deposit_MIR_tx_status}')
@@ -667,7 +674,7 @@ def main():
                     else:
                         default_logger.debug(f'[MIR LP Deposit] Skipped because no MIR ({(MIR_to_be_deposited.__float__()/1000000):.0f}) to deposit.')
                 else:
-                    default_logger.warning(f'[MIR LP Deposit] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                    default_logger.warning(f'[MIR LP Deposit] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                     return False
             else:
                 default_logger.debug(f'[MIR LP Deposit] Skipped because no MIR marked to deposited ({action_dict["MIR"]}).')
@@ -681,7 +688,7 @@ def main():
         if cooldowns.get('deposit_SPEC_in_pool') is None or cooldowns['deposit_SPEC_in_pool'] <= datetime_now:
             if action_dict['SPEC'] == 'deposit':
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
-                if wallet_balance['UST'] > general_estimated_tx_fee:
+                if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to deposit
                     wallet_balance['SPEC'] = Queries_class.get_non_native_balance(Terra_class.SPEC_token)
                     SPEC_to_be_deposited = wallet_balance['SPEC'] - wallet_balance_before['SPEC']
@@ -694,7 +701,7 @@ def main():
                             default_logger.debug(f'[SPEC LP Deposit] Success TX: {deposit_SPEC_tx}')
                             report_logger.info(f'[SPEC LP Deposit] {(SPEC_to_be_deposited.__float__()/1000000):.2f} SPEC and {(UST_to_be_deposited_with_SPEC.__float__()/1000000):.2f} UST have been deposited to LP.')
                             # Update UST balance in wallet
-                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                         else:
                             default_logger.warning(f'[SPEC LP Deposit] Failed TX: {deposit_SPEC_tx}.\n'
                                             f'[SPEC LP Deposit] Reason: {deposit_SPEC_tx_status}')
@@ -702,7 +709,7 @@ def main():
                     else:
                         default_logger.debug(f'[SPEC LP Deposit] Skipped because no SPEC ({(SPEC_to_be_deposited.__float__()/1000000):.0f}) to deposit.')
                 else:
-                    default_logger.warning(f'[SPEC LP Deposit] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                    default_logger.warning(f'[SPEC LP Deposit] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                     return False
             else:
                 default_logger.debug(f'[SPEC LP Deposit] Skipped because no SPEC marked to deposited ({action_dict["SPEC"]}).')
@@ -717,7 +724,7 @@ def main():
         if cooldowns.get('deposit_ANC_in_pool') is None or cooldowns['deposit_ANC_in_pool'] <= datetime_now:
             if action_dict['ANC'] == 'deposit':
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
-                if wallet_balance['UST'] > general_estimated_tx_fee:
+                if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to deposit
                     wallet_balance['ANC'] = Queries_class.get_non_native_balance(Terra_class.ANC_token)
                     ANC_to_be_deposited = wallet_balance['ANC'] - wallet_balance_before['ANC']
@@ -730,7 +737,7 @@ def main():
                             default_logger.debug(f'[ANC LP Deposit] Success TX: {deposit_ANC_tx}')
                             report_logger.info(f'[ANC LP Deposit] {(ANC_to_be_deposited.__float__()/1000000):.2f} ANC and {(UST_to_be_deposited_with_ANC.__float__()/1000000):.2f} UST have been deposited to LP.')
                             # Update UST balance in wallet
-                            wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+                            wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
                         else:
                             default_logger.warning(f'[ANC LP Deposit] Failed TX: {deposit_ANC_tx}.\n'
                                             f'[ANC LP Deposit] Reason: {deposit_ANC_tx_status}')
@@ -738,7 +745,7 @@ def main():
                     else:
                         default_logger.debug(f'[ANC LP Deposit] Skipped because no ANC ({(ANC_to_be_deposited.__float__()/1000000):.0f}) to deposit.')
                 else:
-                    default_logger.warning(f'[ANC LP Deposit] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+                    default_logger.warning(f'[ANC LP Deposit] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                     return False
             else:
                 default_logger.debug(f'[ANC LP Deposit] Skipped because no ANC marked to deposited ({action_dict["ANC"]}).')
@@ -761,8 +768,8 @@ def main():
         
         if Anchor_action_to_be_executed == 'none':
 
-            if wallet_balance['UST'] < general_estimated_tx_fee:
-                default_logger.warning(f'[Anchor] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["UST"].__float__() / 1000000):.2f}).')
+            if wallet_balance['uusd'] < general_estimated_tx_fee:
+                default_logger.warning(f'[Anchor] YOU NEED TO ACT! Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
                 return False
             default_logger.debug(f'[Anchor] Anchor is healthy. Current LTV at {(Anchor_borrow_info["cur_col_ratio"].__float__()*100):.2f} %.')
             
@@ -776,7 +783,7 @@ def main():
             if cooldowns.get('Anchor_repay_debt_UST') is None or cooldowns['Anchor_repay_debt_UST'] <= datetime_now:
                 if Anchor_amount_to_execute_in_ust > config.Anchor_min_repay_limit:
                     # Check if the wallet has enough UST to repay and for tx fees
-                    if Anchor_amount_to_execute_in_ust < (wallet_balance['UST'] - general_estimated_tx_fee):
+                    if Anchor_amount_to_execute_in_ust < (wallet_balance['uusd'] - general_estimated_tx_fee):
                         Anchor_repay_debt_UST_tx = Transaction_class.Anchor_repay_debt_UST(Anchor_amount_to_execute_in_ust)
                         Anchor_repay_debt_UST_tx_status = Queries_class.get_status_of_tx(Anchor_repay_debt_UST_tx)
                         if Anchor_repay_debt_UST_tx_status == True:
@@ -789,10 +796,10 @@ def main():
 
                     # Otherwise check if the balance in the wallet + a withdrawl of UST from Anchor Earn would be enough, and withdraw what is needed
                     elif config.Anchor_enable_withdraw_of_deposited_UST \
-                            and (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['UST'] - general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000) >= Anchor_amount_to_execute_in_ust:
+                            and (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd'] - general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000) >= Anchor_amount_to_execute_in_ust:
 
-                        Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - wallet_balance['UST'] + general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000
-                        Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(Amount_to_be_withdrawn, 'UST')
+                        Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - wallet_balance['uusd'] + general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000
+                        Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(Amount_to_be_withdrawn, 'uusd')
                         Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(Anchor_withdraw_UST_from_Earn_tx)
 
                         if Anchor_withdraw_UST_from_Earn_tx_status == True:
@@ -813,7 +820,7 @@ def main():
 
                     # Otherwise (if allowed) withdraw what is available and repay what is possible if enough tx fees are available
                     elif config.Anchor_enable_partially_repay_if_not_enough_UST_in_wallet \
-                            and wallet_balance['UST'] > general_estimated_tx_fee:
+                            and wallet_balance['uusd'] > general_estimated_tx_fee:
 
                         Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(wallet_balance['aUST'], 'aUST')
                         Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(Anchor_withdraw_UST_from_Earn_tx)
@@ -847,7 +854,7 @@ def main():
         # Anchor: Borrow more UST if possible, allowed, big enough and enough balance for tx fees is available
         elif Anchor_action_to_be_executed == 'borrow' \
                 and Anchor_amount_to_execute_in_ust > config.Anchor_min_borrow_limit \
-                and wallet_balance['UST'] > general_estimated_tx_fee:
+                and wallet_balance['uusd'] > general_estimated_tx_fee:
             
             if cooldowns.get('Anchor_borrow_more_UST') is None or cooldowns['Anchor_borrow_more_UST'] <= datetime_now:
                 # Check if we are in a cooldown period or if the key actually exists
@@ -881,13 +888,13 @@ def main():
         default_logger.debug(f'[Anchor] You do not have any collateral deposited in Anchor. You borrow limit is 0.')
 
     # Update wallet balances to find out what the delta is
-    wallet_balance['UST'] = Dec(Queries_class.get_native_balance('uusd'))
+    wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
 
     # Anchor: Deposit UST from previous claim/sale of reward tokens into Anchor to get more aUST
     if config.Anchor_Earn_enable_deposit_UST:
         if cooldowns.get('Anchor_deposit_UST_for_Earn') is None or cooldowns['Anchor_deposit_UST_for_Earn'] <= datetime_now:
-            UST_to_be_deposited_at_Anchor_Earn = wallet_balance['UST'] - wallet_balance_before['UST'] - (config.Anchor_Earn_min_balance_to_keep_in_wallet * 1000000)
-            default_logger.debug(f'[Anchor Deposit] Updated UST balance {(wallet_balance["UST"].__float__()/1000000):.2f}')
+            UST_to_be_deposited_at_Anchor_Earn = wallet_balance['uusd'] - wallet_balance_before['uusd'] - (config.Anchor_Earn_min_balance_to_keep_in_wallet * 1000000)
+            default_logger.debug(f'[Anchor Deposit] Updated UST balance {(wallet_balance["uusd"].__float__()/1000000):.2f}')
             if UST_to_be_deposited_at_Anchor_Earn >= config.Anchor_Earn_min_deposit_amount:
                 Anchor_deposit_UST_for_Earn_tx = Transaction_class.Anchor_deposit_UST_for_Earn(UST_to_be_deposited_at_Anchor_Earn)
                 Anchor_deposit_UST_for_Earn_tx_status = Queries_class.get_status_of_tx(Anchor_deposit_UST_for_Earn_tx)
@@ -968,15 +975,15 @@ def main():
 
                     # Depending on the collateral token required, check if enough balance of the in-kind token is in your wallet
                     # and enough UST for the transaction fee
-                    wallet_balance['UST'] = Queries_class.get_native_balance('uusd')
+                    wallet_balance['uusd'] = Queries_class.get_native_balance('uusd')
                     if collateral_token_denom == 'aUST':
                         available_balance = Queries_class.get_non_native_balance(Terra_class.aUST_token) / 1000000
-                        enough_balance = available_balance >= amount_to_execute_in_kind and wallet_balance['UST'] > general_estimated_tx_fee
+                        enough_balance = available_balance >= amount_to_execute_in_kind and wallet_balance['uusd'] > general_estimated_tx_fee
                     elif collateral_token_denom == 'uluna':
                         available_balance = Queries_class.get_native_balance('uluna') / 1000000
-                        enough_balance = available_balance >= amount_to_execute_in_kind and wallet_balance['UST'] > general_estimated_tx_fee
+                        enough_balance = available_balance >= amount_to_execute_in_kind and wallet_balance['uusd'] > general_estimated_tx_fee
                     elif collateral_token_denom == 'uusd':
-                        available_balance = wallet_balance['UST']
+                        available_balance = wallet_balance['uusd']
                         enough_balance = available_balance >= amount_to_execute_in_kind + general_estimated_tx_fee
                     else:
                         default_logger.debug(f'[Mirror Shorts] You discovered a new collateral_token_denom. Congratulations! Please post this as an issue on my Github, so I can fix it. Thank you!')
@@ -1092,4 +1099,4 @@ def main():
     return True
 
 if __name__ == '__main__':
-    main = main()
+    main = asyncio.run(main())

@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
-import os
+from os import environ
 
 # SETUP
-NETWORK = 'TESTNET' # TESTNET or MAINNET
-
 # Replace the seed phrase with yours
-mnemonic = os.environ.get('MNEMONIC', 'doorpost lankiness impurity cottage dust spectacle matador annuity obsessive swimwear coaster proclaim frosting radiance grandpa worrier undermost encourage fall lather fake phrase for real')
+# I strongly recommend to add your seed, API keys, passwords as an environment variable. You can find out how to set this up here: https://dev.to/biplov/handling-passwords-and-secret-keys-using-environment-variables-2ei0
+NETWORK = 'MAINNET' # TESTNET or MAINNET
+if NETWORK == 'MAINNET':
+    mnemonic = environ.get('MNEMONIC_MAIN', 'doorpost lankiness impurity cottage dust spectacle matador annuity obsessive swimwear coaster proclaim frosting radiance grandpa worrier undermost encourage fall lather fake phrase for real')
+else:
+    mnemonic = environ.get('MNEMONIC_TEST', 'doorpost lankiness impurity cottage dust spectacle matador annuity obsessive swimwear coaster proclaim frosting radiance grandpa worrier undermost encourage fall lather fake phrase for real')
 
 # Read me: When to claim, sell, unstake? - What is the right min_total_value?
 # Check this link: https://docs.google.com/spreadsheets/d/1U9jd5rarvWwbeuGLzkuG7Hyx4B71Pkdrmoj894SGr3M
@@ -116,11 +119,12 @@ Safety_multiple_on_transaction_fees = 3 # Multiplier for Anchor Borrow, Repay, D
 Block_failed_transaction_cooldown = 6 # In hours. In case a transaction fails that transaction can be blocked for a certain amount of time.
 
 # NOTIFICATION SETUP
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '2021362648:yatqcHqDhGLU-z-XPNCDLHDVVQXZMDVFQXW') # See readme.md how to get this.
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '1386432285') # See readme.md how to get this.
-SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL', 'Your Webhook here') # See readme.md how to get this.
+# I strongly recommend to add your seed, API keys, passwords as an environment variable. You can find out how to set this up here: https://dev.to/biplov/handling-passwords-and-secret-keys-using-environment-variables-2ei0
+TELEGRAM_TOKEN = environ.get('TELEGRAM_TOKEN', '2021362648:yatqcHqDhGLU-z-XPNCDLHDVVQXZMDVFQXW') # See readme.md how to get this.
+TELEGRAM_CHAT_ID = environ.get('TELEGRAM_CHAT_ID', '1386432285') # See readme.md how to get this.
+SLACK_WEBHOOK_URL = environ.get('SLACK_WEBHOOK_URL', 'Your Webhook here') # See readme.md how to get this.
 
-GMAIL_APP_PASSWORD = 'cjutfanqprdodiby' # See readme.md how to get this.
+GMAIL_APP_PASSWORD = environ.get('GMAIL_APP_PASSWORD', 'cjutfanqprdodiby') # See readme.md how to get this.
 GMAIL_ACCOUNT = 'myamazingemailaddress@gmail.com' # Your Gmail address you use for logging into your account.
 EMAIL_SUBJECT = 'Terra One-Stop-Bot'
 EMAIL_FROM = GMAIL_ACCOUNT # Normally the same as your main Gmail address.

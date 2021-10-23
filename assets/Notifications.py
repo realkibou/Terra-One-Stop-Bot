@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import B_Config as config
-from requests import post
+from httpx import post
 from json import dumps
 from os import system
 from email.mime.text import MIMEText

@@ -2,7 +2,7 @@
 
 # Terra SDK
 from requests.exceptions import ConnectTimeout
-from terra_sdk.client.lcd import LCDClient
+from terra_sdk.client.lcd import LCDClient, AsyncLCDClient
 from terra_sdk.key.mnemonic import MnemonicKey
 
 # Other assets
@@ -10,7 +10,7 @@ from assets.Contact_addresses import Contract_addresses
 
 # from assets.Queries import Queries
 import B_Config as config
-from requests import get, ConnectionError, ConnectTimeout
+from httpx import get, ConnectError, ConnectTimeout
 
 def get_terra_gas_prices(retry=0):
    
@@ -20,7 +20,7 @@ def get_terra_gas_prices(retry=0):
         if r.status_code == 200:
             return r.json()
     
-    except ConnectionError as err:
+    except ConnectError as err:
         if retry < 1:
             retry +=1
             get_terra_gas_prices(retry)
@@ -89,6 +89,12 @@ class Terra:
     success_tx_hash = contact_addresses['success_tx_hash']
 
     terra = LCDClient(
+        chain_id=chain_id,
+        url=public_node_url,
+        gas_prices=terra_gas_prices['uusd']+"uusd",
+        gas_adjustment=1.6)
+
+    terra_async = AsyncLCDClient(
         chain_id=chain_id,
         url=public_node_url,
         gas_prices=terra_gas_prices['uusd']+"uusd",

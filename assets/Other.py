@@ -3,7 +3,6 @@
 # Terra SKD
 from terra_sdk.core.numeric import Dec
 
-
 # Other assets
 from assets.Logging import Logger
 import B_Config as config
@@ -25,7 +24,7 @@ class Cooldown:
             dump(cooldowns, fp)
         fp.close
 
-    def read_cooldown(self):
+    async def read_cooldown(self):
 
         # If file does not exists create one and fill it with data
         if not path.isfile('X_Cooldowns.json'):
