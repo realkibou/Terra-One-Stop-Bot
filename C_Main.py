@@ -536,6 +536,16 @@ async def main():
     #                     f'------------ SELL SECTION -------------\n'
     #                     f'---------------------------------------\n')
 
+    wallet_balance['MIR'], \
+    wallet_balance['SPEC'], \
+    wallet_balance['ANC'] \
+    = await asyncio.gather(
+    Queries_class.get_non_native_balance(Terra_class.MIR_token),
+    Queries_class.get_non_native_balance(Terra_class.SPEC_token),
+    Queries_class.get_non_native_balance(Terra_class.ANC_token)
+    )
+
+
     # Check if section is enabled
     if config.MIR_claim_and_sell_token:
         if cooldowns.get('sell_MIR') is None or cooldowns['sell_MIR'] <= datetime_now:
@@ -543,7 +553,6 @@ async def main():
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to sell
-                    wallet_balance['MIR'] = Queries_class.get_non_native_balance(Terra_class.MIR_token)
                     default_logger.debug(f'[MIR Sell] Updated MIR balance {(wallet_balance["MIR"].__float__()/1000000)}')
                     MIR_to_be_sold = wallet_balance['MIR'] - wallet_balance_before['MIR']
                     if MIR_to_be_sold > 0:
@@ -580,7 +589,6 @@ async def main():
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to sell
-                    wallet_balance['SPEC'] = Queries_class.get_non_native_balance(Terra_class.SPEC_token)
                     default_logger.debug(f'[SPEC Sell] Updated SPEC balance {(wallet_balance["SPEC"].__float__()/1000000)}')
                     SPEC_to_be_sold = wallet_balance['SPEC'] - wallet_balance_before['SPEC']
                     if SPEC_to_be_sold > 0:
@@ -615,7 +623,6 @@ async def main():
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to sell
-                    wallet_balance['ANC'] = Queries_class.get_non_native_balance(Terra_class.ANC_token)
                     default_logger.debug(f'[ANC Sell] Updated ANC balance {(wallet_balance["ANC"].__float__()/1000000)}')
                     ANC_to_be_sold = wallet_balance['ANC'] - wallet_balance_before['ANC']
                     if ANC_to_be_sold > 0:
@@ -655,7 +662,6 @@ async def main():
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to deposit
-                    wallet_balance['MIR'] = Queries_class.get_non_native_balance(Terra_class.MIR_token)
                     MIR_to_be_deposited = wallet_balance['MIR'] - wallet_balance_before['MIR']
                     if MIR_to_be_deposited > 0:
                         # Price and min_value has been checked before therefore deposit
@@ -690,7 +696,6 @@ async def main():
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to deposit
-                    wallet_balance['SPEC'] = Queries_class.get_non_native_balance(Terra_class.SPEC_token)
                     SPEC_to_be_deposited = wallet_balance['SPEC'] - wallet_balance_before['SPEC']
                     if SPEC_to_be_deposited > 0:
                         # Price and min_value has been checked before therefore deposit
@@ -726,7 +731,6 @@ async def main():
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
                     # Check if there is any token to deposit
-                    wallet_balance['ANC'] = Queries_class.get_non_native_balance(Terra_class.ANC_token)
                     ANC_to_be_deposited = wallet_balance['ANC'] - wallet_balance_before['ANC']
                     if ANC_to_be_deposited > 0:
                         # Price and min_value has been checked before therefore deposit
@@ -977,7 +981,7 @@ async def main():
                     # and enough UST for the transaction fee
                     wallet_balance['uusd'] = Queries_class.get_native_balance('uusd')
                     if collateral_token_denom == 'aUST':
-                        available_balance = Queries_class.get_non_native_balance(Terra_class.aUST_token) / 1000000
+                        available_balance = await Queries_class.get_non_native_balance(Terra_class.aUST_token) / 1000000
                         enough_balance = available_balance >= amount_to_execute_in_kind and wallet_balance['uusd'] > general_estimated_tx_fee
                     elif collateral_token_denom == 'uluna':
                         available_balance = Queries_class.get_native_balance('uluna') / 1000000

@@ -21,6 +21,9 @@ account_address = Terra.account_address
 class Queries:
     if config.Debug_mode: print(f'Queries Class loaded.')
     default_logger = Logger().default_logger
+
+    def __init__(self) -> None:
+        self.all_rates = asyncio.run(self.get_all_rates())
        
     async def get_all_rates(self):
 
@@ -136,11 +139,9 @@ class Queries:
 
         position_ids_result, \
         luna_col_multiplier, \
-        all_rates \
         = await asyncio.gather(
         Terra.terra_async.wasm.contract_query(Terra.Mint, query_position_ids),
         self.get_luna_col_multiplier(),
-        self.get_all_rates()
         )        
 
         for position in position_ids_result['positions']:
@@ -162,9 +163,9 @@ class Queries:
 
             # As the mAsset is valued in UST, we convert the colateral_amount also into UST here.
             if collateral_token_denom == 'aUST':
-                collateral_amount_in_ust = collateral_amount_in_kind * all_rates['aUST'] / 1000000
+                collateral_amount_in_ust = collateral_amount_in_kind * self.all_rates['aUST'] / 1000000
             elif collateral_token_denom == 'uluna':
-                collateral_amount_in_ust = collateral_amount_in_kind * all_rates['LUNAs'] / 1000000
+                collateral_amount_in_ust = collateral_amount_in_kind * self.all_rates['LUNAs'] / 1000000
             elif collateral_token_denom == 'uusd':
                 collateral_amount_in_ust = collateral_amount_in_kind
 
