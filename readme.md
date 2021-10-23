@@ -132,7 +132,6 @@ I made the One-Stop-Bot as much configureable as possible. You can configure wha
 1. `git clone` this repository.
 2. Rename `B_Config.py.sample` to `B_Config.py`.
 3. Change `B_Config.py` as you desire and feed your seed *(a dedicated wallet is recommended)*.
-*  *I strongly recommend to add your seed, API keys, passwords as an environment variable. You can find out how to set this up here: https://dev.to/biplov/handling-passwords-and-secret-keys-using-environment-variables-2ei0*.
 4. Run  `pip3 install -r A_Requirements.txt`.
 5. Run the One-Stop-Bot with a crontab directly or with `python D_Scheduler.py`.
 6. Make yourself familiar with the bot by using the TESTNET first (Get free UST/LUNA here: https://faucet.terra.money/) by enabling features step-by-step.
