@@ -780,7 +780,7 @@ async def main():
             if not config.Anchor_enable_auto_repay_of_debt:
                 default_logger.debug(f'[Anchor Repay] Skipped because disabled by config ({config.Anchor_enable_auto_repay_of_debt}).')
             if not config.Anchor_enable_auto_borrow_UST:
-                default_logger.debug(f'[Anchor Borrow] Skipped because disabled by config ({config.AAnchor_enable_auto_borrow_UST}).')
+                default_logger.debug(f'[Anchor Borrow] Skipped because disabled by config ({config.Anchor_enable_auto_borrow_UST}).')
            
 
         elif Anchor_action_to_be_executed == 'repay':
