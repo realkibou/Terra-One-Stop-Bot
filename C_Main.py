@@ -247,7 +247,7 @@ async def main():
                             # Check if deposit is enabled
                             elif config.MIR_claim_and_deposit_in_LP:
                                 # Check if enough UST is available to actually deposit it later
-                                UST_to_be_deposited_with_MIR = claimable_MIR * (all_rates['MIR'] + tax_rate)
+                                UST_to_be_deposited_with_MIR = claimable_MIR * (all_rates['MIR']/1000000 + tax_rate)
                                 if wallet_balance['uusd'] > UST_to_be_deposited_with_MIR:
                                     # Claim and mark for deposit
                                     claim_MIR_tx = Transaction_class.claim_MIR()
@@ -266,13 +266,13 @@ async def main():
                                 # Not enough UST in the wallet to deposit later. Check if allowed to take from Anchor Earn.
                                 elif config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP:
                                     # Check if enough in Anchor Earn to withdraw
-                                    if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd']) > UST_to_be_deposited_with_MIR:
+                                    if (wallet_balance['aUST'] * all_rates['aUST']/1000000 + wallet_balance['uusd']) > UST_to_be_deposited_with_MIR:
                                         # Withdraw from Anchor Earn
                                         claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_MIR - wallet_balance['uusd'], 'uusd')
                                         claim_Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(claim_Anchor_withdraw_UST_from_Earn_tx)
                                         if claim_Anchor_withdraw_UST_from_Earn_tx_status:
                                             # ! This can result in a withdraw from Anchor Earn three times (MIR, SPEC, ANC) if you balance is not enough. There is no cumulated withdraw.
-                                            report_logger.info(f'[MIR Claim] No enought UST balance to depoit later with MIR, so {(UST_to_be_deposited_with_MIR.__float__() - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
+                                            report_logger.info(f'[MIR Claim] No enought UST balance to depoit later with MIR, so {(UST_to_be_deposited_with_MIR.__float__()/1000000 - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
                                             # Claim and mark for deposit
                                             claim_MIR_tx = Transaction_class.claim_MIR()
                                             claim_MIR_tx_status = Queries_class.get_status_of_tx(claim_MIR_tx)
@@ -342,7 +342,7 @@ async def main():
                             # Check if deposit is enabled
                             elif config.SPEC_claim_and_deposit_in_LP:
                                 # Check if enough UST is available to actually deposit it later
-                                UST_to_be_deposited_with_SPEC = claimable_SPEC * (all_rates['SPEC'] + tax_rate)
+                                UST_to_be_deposited_with_SPEC = claimable_SPEC * (all_rates['SPEC']/1000000 + tax_rate)
                                 if wallet_balance['uusd'] > UST_to_be_deposited_with_SPEC:
                                     # Claim and mark for deposit
                                     claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
@@ -361,13 +361,13 @@ async def main():
                                 # Not enough UST in the wallet to deposit later. Check if allowed to take from Anchor Earn.
                                 elif config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP:
                                     # Check if enough in Anchor Earn to withdraw
-                                    if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd'])> UST_to_be_deposited_with_SPEC:
+                                    if (wallet_balance['aUST'] * all_rates['aUST']/1000000 + wallet_balance['uusd'])> UST_to_be_deposited_with_SPEC:
                                         # Withdraw from Anchor Earn
                                         claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_SPEC - wallet_balance['uusd'], 'uusd')
                                         claim_Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(claim_Anchor_withdraw_UST_from_Earn_tx)
                                         if claim_Anchor_withdraw_UST_from_Earn_tx_status:
                                             # ! This can result in a withdraw from Anchor Earn three times (MIR, SPEC, ANC) if you balance is not enough. There is no cumulated withdraw.
-                                            report_logger.info(f'[SPEC Claim] No enought UST balance to depoit later with SPEC, so {(UST_to_be_deposited_with_SPEC.__float__() - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
+                                            report_logger.info(f'[SPEC Claim] No enought UST balance to depoit later with SPEC, so {(UST_to_be_deposited_with_SPEC.__float__()/1000000 - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
                                             # Claim and mark for deposit
                                             claim_SPEC_tx = Transaction_class.claim_SPEC(claimable_SPEC_list)
                                             claim_SPEC_tx_status = Queries_class.get_status_of_tx(claim_SPEC_tx)
@@ -436,7 +436,7 @@ async def main():
                             # Check if deposit is enabled
                             elif config.ANC_claim_and_deposit_in_LP:
                                 # Check if enough UST is available to actually deposit it later
-                                UST_to_be_deposited_with_ANC = claimable_ANC * (all_rates['ANC'] + tax_rate)
+                                UST_to_be_deposited_with_ANC = claimable_ANC * (all_rates['ANC']/1000000 + tax_rate)
                                 if wallet_balance['uusd'] > UST_to_be_deposited_with_ANC:
                                     # Claim and mark for deposit
                                     claim_ANC_tx = Transaction_class.claim_ANC()
@@ -455,13 +455,13 @@ async def main():
                                 # Not enough UST in the wallet to deposit later. Check if allowed to take from Anchor Earn.
                                 elif config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP:
                                     # Check if enough in Anchor Earn to withdraw
-                                    if (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd']) > UST_to_be_deposited_with_ANC:
+                                    if (wallet_balance['aUST'] * all_rates['aUST']/1000000 + wallet_balance['uusd']) > UST_to_be_deposited_with_ANC:
                                         # Withdraw from Anchor Earn
                                         claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_ANC - wallet_balance['uusd'], 'uusd')
                                         claim_Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(claim_Anchor_withdraw_UST_from_Earn_tx)
                                         if claim_Anchor_withdraw_UST_from_Earn_tx_status:
                                             # ! This can result in a withdraw from Anchor Earn three times (MIR, SPEC, ANC) if you balance is not enough. There is no cumulated withdraw.
-                                            report_logger.info(f'[ANC Claim] No enought UST balance to depoit later with ANC, so {(UST_to_be_deposited_with_ANC.__float__() - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
+                                            report_logger.info(f'[ANC Claim] No enought UST balance to depoit later with ANC, so {(UST_to_be_deposited_with_ANC.__float__()/1000000 - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
                                             # Claim and mark for deposit
                                             claim_ANC_tx = Transaction_class.claim_ANC()
                                             claim_ANC_tx_status = Queries_class.get_status_of_tx(claim_ANC_tx)
@@ -535,7 +535,7 @@ async def main():
                 default_logger.debug(f'[Mirror Claim UST] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["Mirror_claim_unlocked_UST"]}).')
         else:
             default_logger.debug(
-                f'[Mirror Claim UST] Skipped because disabled by config ({config.Mirror_claim_unlocked_UST}) or insufficent funds ({(wallet_balance["uusd"].__float__() - general_estimated_tx_fee.__float__()):.2f}).')
+                f'[Mirror Claim UST] Skipped because disabled by config ({config.Mirror_claim_unlocked_UST}) or insufficent funds ({(wallet_balance["uusd"].__float__()/1000000 - general_estimated_tx_fee.__float__()/1000000):.2f}).')
 
         # default_logger.debug(f'---------------------------------------\n'
         #                     f'------------ SELL SECTION -------------\n'
@@ -670,7 +670,7 @@ async def main():
                         MIR_to_be_deposited = wallet_balance['MIR'] - wallet_balance_before['MIR']
                         if MIR_to_be_deposited > 0:
                             # Price and min_value has been checked before therefore deposit
-                            UST_to_be_deposited_with_MIR = MIR_to_be_deposited * (all_rates['MIR'] + tax_rate)
+                            UST_to_be_deposited_with_MIR = MIR_to_be_deposited * (all_rates['MIR']/1000000 + tax_rate)
                             deposit_MIR_tx = Transaction_class.deposit_MIR_in_pool(MIR_to_be_deposited, UST_to_be_deposited_with_MIR)
                             deposit_MIR_tx_status = Queries_class.get_status_of_tx(deposit_MIR_tx)
                             if deposit_MIR_tx_status == True:
@@ -704,7 +704,7 @@ async def main():
                         SPEC_to_be_deposited = wallet_balance['SPEC'] - wallet_balance_before['SPEC']
                         if SPEC_to_be_deposited > 0:
                             # Price and min_value has been checked before therefore deposit
-                            UST_to_be_deposited_with_SPEC = SPEC_to_be_deposited * (all_rates['SPEC'] + tax_rate)
+                            UST_to_be_deposited_with_SPEC = SPEC_to_be_deposited * (all_rates['SPEC']/1000000 + tax_rate)
                             deposit_SPEC_tx = Transaction_class.deposit_SPEC_in_pool(SPEC_to_be_deposited, UST_to_be_deposited_with_SPEC)
                             deposit_SPEC_tx_status = Queries_class.get_status_of_tx(deposit_SPEC_tx)
                             if deposit_SPEC_tx_status == True:
@@ -739,7 +739,7 @@ async def main():
                         ANC_to_be_deposited = wallet_balance['ANC'] - wallet_balance_before['ANC']
                         if ANC_to_be_deposited > 0:
                             # Price and min_value has been checked before therefore deposit
-                            UST_to_be_deposited_with_ANC = ANC_to_be_deposited * (all_rates['ANC'] + tax_rate)
+                            UST_to_be_deposited_with_ANC = ANC_to_be_deposited * (all_rates['ANC']/1000000 + tax_rate)
                             deposit_ANC_tx = Transaction_class.deposit_ANC_in_pool(ANC_to_be_deposited, UST_to_be_deposited_with_ANC)
                             deposit_ANC_tx_status = Queries_class.get_status_of_tx(deposit_ANC_tx)
                             if deposit_ANC_tx_status == True:
@@ -805,7 +805,7 @@ async def main():
 
                         # Otherwise check if the balance in the wallet + a withdrawl of UST from Anchor Earn would be enough, and withdraw what is needed
                         elif config.Anchor_enable_withdraw_of_deposited_UST \
-                                and (wallet_balance['aUST'] * all_rates['aUST'] + wallet_balance['uusd'] - general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000) >= Anchor_amount_to_execute_in_ust:
+                                and (wallet_balance['aUST'] * all_rates['aUST']/1000000 + wallet_balance['uusd'] - general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000) >= Anchor_amount_to_execute_in_ust:
 
                             Amount_to_be_withdrawn = Anchor_amount_to_execute_in_ust - wallet_balance['uusd'] + general_estimated_tx_fee + Dec(config.Anchor_Earn_min_balance_to_keep_in_wallet)* 1000000
                             Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(Amount_to_be_withdrawn, 'uusd')
