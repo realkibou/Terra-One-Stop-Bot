@@ -99,6 +99,7 @@ class Queries:
     async def get_latest_block(self):
         result = await Terra.terra_async.tendermint.block_info()
         height = result['block']['header']['height']
+        i = 7/0
         return int(height)
 
     async def get_oracle_price_and_min_col_ratio(self, mAsset:str):

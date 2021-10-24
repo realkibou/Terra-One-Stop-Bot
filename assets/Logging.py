@@ -12,7 +12,7 @@ from logging.config import dictConfig
 if config.Debug_mode:
     level = 'DEBUG'
 else:
-    level = 'WARNING'
+    level = 'INFO'
 
 # Logging setup
 LOGGING_CONFIG = {
@@ -21,12 +21,12 @@ LOGGING_CONFIG = {
     'loggers': {
         'default_logger': {
             'level': level,
-            'handlers': ['default', 'report'],
+            'handlers': ['default'],
             'propagate': False
         },
         'report_logger': {
             'level': 'INFO',
-            'handlers': ['default', 'report'],
+            'handlers': ['report'],
             'propagate': False
         },
     },
@@ -77,4 +77,4 @@ class Logger:
         self.report_array = StringIO()
         self.report_handler = StreamHandler(self.report_array)
         self.report_logger.addHandler(self.report_handler)
-        self.default_logger.addHandler(self.report_handler)
+        self.report_logger.addHandler(self.default_logger)

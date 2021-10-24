@@ -21,46 +21,37 @@ class Notifications:
             ]
         }
 
-        try:
-            response = post(
-                config.SLACK_WEBHOOK_URL, data=dumps(slack_data),
-                headers={'Content-Type': 'application/json'}, timeout=5
+        response = post(
+            config.SLACK_WEBHOOK_URL, data=dumps(slack_data),
+            headers={'Content-Type': 'application/json'}, timeout=5
+        )
+        if response.status_code != 200:
+            raise ValueError(
+                'Request to slack returned an error %s, the response is:\n%s'
+                % (response.status_code, response.text)
             )
-            if response.status_code != 200:
-                raise ValueError(
-                    'Request to slack returned an error %s, the response is:\n%s'
-                    % (response.status_code, response.text)
-                )
-        except Exception: # Todo
-            pass
 
 
     def telegram_notification(self, msg:str):
         tg_data = {"chat_id": str(config.TELEGRAM_CHAT_ID),
                 "text": msg, "parse_mode": 'Markdown'}
 
-        try:
-            response = post('https://api.telegram.org/bot' + config.TELEGRAM_TOKEN + '/sendMessage', data=dumps(tg_data),
-                                    headers={'Content-Type': 'application/json'}, timeout=5
-                                    )
-            if response.status_code != 200:
-                raise ValueError(
-                    'Request to slack returned an error %s, the response is:\n%s'
-                    % (response.status_code, response.text)
-                )
-        except Exception: # Todo
-            pass
+        response = post('https://api.telegram.org/bot' + config.TELEGRAM_TOKEN + '/sendMessage', data=dumps(tg_data),
+                                headers={'Content-Type': 'application/json'}, timeout=5
+                                )
+        if response.status_code != 200:
+            raise ValueError(
+                'Request to slack returned an error %s, the response is:\n%s'
+                % (response.status_code, response.text)
+            )
 
 
     def email_notification(self, msg:str):
 
-        try:
-            with open('One-stop-bot-email-temp-body.txt', 'w', encoding='utf-8') as txt_file:
-                txt_file.write(msg)
-            system('cat One-stop-bot-email-temp-body.txt | mail -s "' +
-                    config.Email_subject + config.Email_address)
-        except Exception: # Todo
-            pass
+        with open('One-stop-bot-email-temp-body.txt', 'w', encoding='utf-8') as txt_file:
+            txt_file.write(msg)
+        system('cat One-stop-bot-email-temp-body.txt | mail -s "' +
+                config.Email_subject + config.Email_address)
         
     def report_content_to_HTML(self, report_content):
         return report_content.replace('\n','\n')
