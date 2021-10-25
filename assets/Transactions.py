@@ -98,7 +98,7 @@ class Transaction:
 
             else:
                 # Luna and UST are natively supported
-                coins = Coins([Coin(collateral_amount_in_kind, denom)])
+                coins = Coins([Coin(denom, collateral_amount_in_kind)])
 
                 contract = Terra.Mint
                 execute_msg={
@@ -142,7 +142,7 @@ class Transaction:
                 coins=Coins()
 
             else:
-                coins = Coins([Coin(collateral_amount_in_kind, 'uusd')])
+                coins = Coins([Coin('uusd', collateral_amount_in_kind)])
 
                 contract=Terra.Mint
                 execute_msg={
@@ -325,7 +325,7 @@ class Transaction:
 
             if amount > 0:
 
-                coins = Coins([Coin(amount, 'uusd')])
+                coins = Coins([Coin('uusd', amount)])
 
                 contract=Terra.mmMarket
                 execute_msg={
@@ -371,7 +371,7 @@ class Transaction:
 
             if amount > 0:
 
-                coins = Coins([Coin(amount, 'uusd')])
+                coins = Coins([Coin('uusd', amount)])
 
                 contract=Terra.mmMarket
                 execute_msg={
@@ -419,7 +419,7 @@ class Transaction:
                     }
                 ))
 
-            coins = Coins([Coin(amount_UST, 'uusd')])
+            coins = Coins([Coin('uusd', amount_UST)])
 
             message.append(
                 MsgExecuteContract(
@@ -477,7 +477,7 @@ class Transaction:
                     }
                 ))
 
-            coins = Coins([Coin(amount_UST, 'uusd')])
+            coins = Coins([Coin('uusd', amount_UST)])
 
             message.append(
                 MsgExecuteContract(
@@ -533,7 +533,7 @@ class Transaction:
                     }
                 ))
 
-            coins = Coins([Coin(amount_UST, 'uusd')])
+            coins = Coins([Coin('uusd', amount_UST)])
 
             message.append(
                 MsgExecuteContract(
