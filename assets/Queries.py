@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 # Terra SDK
+import re
 from terra_sdk.core.coins import Coin
 from terra_sdk.core.numeric import Dec
 from terra_sdk.exceptions import LCDResponseError
@@ -265,6 +266,7 @@ class Queries:
 
 
     def get_claimable_MIR(self):
+
         claimable = 0
 
         query = {
@@ -366,7 +368,7 @@ class Queries:
         return Dec(claimable)
 
 
-    def Mirror_get_claimable_UST(self, Mirror_position_info:list):
+    def Mirror_get_claimable_UST(self, Mirror_position_info:list, retry=0):
 
         claimable = 0
 
@@ -382,7 +384,7 @@ class Queries:
                 }
             }
 
-            try:                                
+            try:
                 query_result = Terra.terra.wasm.contract_query(Terra.Lock, query)
                 locked_amount = Dec(query_result['locked_amount'])
                 unlock_time = Dec(query_result['unlock_time'])
@@ -394,6 +396,9 @@ class Queries:
                 # Status code 500 means, that there is no unclaimed UST. If so, this exception can be ignored
                 if err.response.status == 500:
                     pass
+                elif retry < 2:
+                    retry += 1
+                    self.Mirror_get_claimable_UST(Mirror_position_info, retry)
                 else:
                     raise err
 

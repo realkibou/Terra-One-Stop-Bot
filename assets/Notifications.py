@@ -54,7 +54,7 @@ class Notifications:
                 config.Email_subject + config.Email_address)
         
     def report_content_to_HTML(self, report_content):
-        return report_content.replace('\n','\n')
+        return report_content.replace('\n','<br>')
 
     def report_contect_to_Telegram(self, report_content):
         pass
