@@ -952,7 +952,7 @@ async def main():
                                     default_logger.debug(
                                         f'[Mirror Shorts Withdraw] Success TX: {Mirror_withdraw_collateral_for_position_tx}')
                                     report_logger.info(
-                                        f'[Mirror Shorts] {(amount_to_execute_in_kind.__float__()/1000000):.2f} {collateral_token_denom} with a value of {(amount_to_execute_in_ust.__float__()/1000000):.0f} UST of collateral have been withdrawn from your short position idx {position["position_idx"]}.')
+                                        f'[Mirror Shorts] {(amount_to_execute_in_kind.__float__()/1000000):.2f} {collateral_token_denom} with a value of {(amount_to_execute_in_ust.__float__()/1000000):.0f} UST of collateral have been withdrawn from your short position idx {position["position_idx"]} {position["mAsset_symbol"]}.')
                                     
                                     # Cooldown: Write date of today into cooldown dictionary
                                     cooldowns[position_idx] = datetime_now + timedelta(days=config.Mirror_withdraw_cooldown)
