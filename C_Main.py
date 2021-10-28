@@ -980,7 +980,7 @@ async def main():
             # Check if position has a deposit pending and if the deposit amount if big enough
             elif action_to_be_executed == 'deposit':
                 if cooldowns.get('Mirror_deposit_collateral_for_position') is None or cooldowns['Mirror_deposit_collateral_for_position'] <= datetime_now:
-                    if amount_to_execute_in_ust > config.Mirror_min_deposit_limit_in_ust:
+                    if amount_to_execute_in_ust > config.Mirror_min_deposit_limit_in_UST:
 
                         # Depending on the collateral token required, check if enough balance of the in-kind token is in your wallet
                         # and enough UST for the transaction fee
@@ -1026,7 +1026,7 @@ async def main():
                                                     f'[Mirror Shorts Deposit] Reason: {Mirror_deposit_collateral_for_position_tx_status}')
                                 cooldowns['Mirror_deposit_collateral_for_position'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
                     else:
-                        default_logger.debug(f'[Mirror Shorts] For position {position_idx} amount to be deposited ({(amount_to_execute_in_ust.__float__()/1000000):.0f}) is below limit ({config.Mirror_min_deposit_limit_in_ust}).')
+                        default_logger.debug(f'[Mirror Shorts] For position {position_idx} amount to be deposited ({(amount_to_execute_in_ust.__float__()/1000000):.0f}) is below limit ({config.Mirror_min_deposit_limit_in_UST}).')
                 else:
                     default_logger.debug(f'[Mirror Shorts Deposit] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["Mirror_deposit_collateral_for_position"]}).')
             
