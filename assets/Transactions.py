@@ -13,6 +13,7 @@ from assets.Terra import Terra
 from assets.Queries import Queries
 from assets.Logging import Logger
 import B_Config as config
+import base64, json
 
 Queries_class = Queries()
 account_address = Terra.account_address
@@ -38,7 +39,6 @@ class Transaction:
             def sell_ANC(self, amount): return Terra.failed_tx_hash
             def sell_MIR(self, amount): return Terra.failed_tx_hash
             def sell_SPEC(self, amount): return Terra.failed_tx_hash
-            def Mirror_deposit_collateral_for_position(self, idx, collateral_amount_in_kind, denom): return Terra.failed_tx_hash
             def deposit_ANC_in_pool(self, amount_token, amount_UST): return Terra.failed_tx_hash
             def deposit_MIR_in_pool(self, amount_token, amount_UST): return Terra.failed_tx_hash
             def deposit_SPEC_in_pool(self, amount_token, amount_UST): return Terra.failed_tx_hash
@@ -60,7 +60,6 @@ class Transaction:
             def sell_ANC(self, amount): return Terra.success_tx_hash
             def sell_MIR(self, amount): return Terra.success_tx_hash
             def sell_SPEC(self, amount): return Terra.success_tx_hash
-            def Mirror_deposit_collateral_for_position(self, idx, collateral_amount_in_kind, denom): return Terra.success_tx_hash
             def deposit_ANC_in_pool(self, amount_token, amount_UST): return Terra.success_tx_hash
             def deposit_MIR_in_pool(self, amount_token, amount_UST): return Terra.success_tx_hash
             def deposit_SPEC_in_pool(self, amount_token, amount_UST): return Terra.success_tx_hash
@@ -75,23 +74,25 @@ class Transaction:
             if denom == 'aUST':
 
                 contract=Terra.aTerra
-                execute_msg={
-                    "send": {
-                        "amount": str(collateral_amount_in_kind),
-                        "contract": Terra.Mint,
-                        "msg": {
-                            "deposit": {
-                                "position_idx": idx,
-                                "collateral": {
-                                    "amount": str(collateral_amount_in_kind),
-                                    "info": {
-                                        "token": {
-                                            "contract_addr": Terra.aTerra,
-                                        }
-                                    }
+                msg = {
+                    "deposit": {
+                        "position_idx": idx,
+                        "collateral": {
+                            "amount": str(collateral_amount_in_kind),
+                            "info": {
+                                "token": {
+                                    "contract_addr": Terra.aTerra,
                                 }
                             }
                         }
+                    }
+                }
+                
+                execute_msg = {
+                    "send": {
+                        "amount": str(collateral_amount_in_kind),
+                        "contract": Terra.Mint,
+                        "msg": base64.b64encode(bytes(json.dumps(msg), "ascii")).decode(),
                     }
                 }
                 coins=Coins()

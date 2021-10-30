@@ -986,10 +986,10 @@ async def main():
                         # and enough UST for the transaction fee
                         wallet_balance['uusd'] = Queries_class.get_native_balance('uusd')
                         if collateral_token_denom == 'aUST':
-                            available_balance = await Queries_class.get_non_native_balance(Terra_class.aUST_token) / 1000000
+                            available_balance = await Queries_class.get_non_native_balance(Terra_class.aUST_token)
                             enough_balance = available_balance >= amount_to_execute_in_kind and wallet_balance['uusd'] > general_estimated_tx_fee
                         elif collateral_token_denom == 'uluna':
-                            available_balance = Queries_class.get_native_balance('uluna') / 1000000
+                            available_balance = Queries_class.get_native_balance('uluna')
                             enough_balance = available_balance >= amount_to_execute_in_kind and wallet_balance['uusd'] > general_estimated_tx_fee
                         elif collateral_token_denom == 'uusd':
                             available_balance = wallet_balance['uusd']
