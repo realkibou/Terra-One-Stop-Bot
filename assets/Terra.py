@@ -92,13 +92,13 @@ class Terra:
         chain_id=chain_id,
         url=public_node_url,
         gas_prices=terra_gas_prices['uusd']+"uusd",
-        gas_adjustment=1.6)
+        gas_adjustment=2)
 
     terra_async = AsyncLCDClient(
         chain_id=chain_id,
         url=public_node_url,
         gas_prices=terra_gas_prices['uusd']+"uusd",
-        gas_adjustment=1.6)
+        gas_adjustment=2)
 
     mk = MnemonicKey(mnemonic=config.mnemonic) # Desire wallet via passphrase
     wallet = terra.wallet(mk) # Define what wallet to use
