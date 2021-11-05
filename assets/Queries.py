@@ -350,22 +350,32 @@ class Queries:
         return claimable_SPEC_list
 
 
-    async def get_claimable_ANC(self):
+    async def get_claimable_ANC(self, retry=0):
 
-        latest_block = await self.get_latest_block()
+        try:
 
-        query = {
-            "borrower_info": {
-                "borrower": account_address,
-                "block_height": latest_block
+            latest_block = await self.get_latest_block()
+
+            query = {
+                "borrower_info": {
+                    "borrower": account_address,
+                    "block_height": latest_block
+                }
             }
-        }
 
-        query_result = await Terra.terra_async.wasm.contract_query(Terra.mmMarket, query)
+            query_result = await Terra.terra_async.wasm.contract_query(Terra.mmMarket, query)
 
-        claimable = query_result['pending_rewards']
+            claimable = query_result['pending_rewards']
 
-        return Dec(claimable)
+            return Dec(claimable)
+
+        except LCDResponseError as err:
+            if retry < 2:
+                retry += 1
+                sleep(5)
+                self.get_claimable_ANC(retry)
+            else:
+                raise err
 
 
     def Mirror_get_claimable_UST(self, Mirror_position_info:list, retry=0):
@@ -398,6 +408,7 @@ class Queries:
                     pass
                 elif retry < 2:
                     retry += 1
+                    sleep(5)
                     self.Mirror_get_claimable_UST(Mirror_position_info, retry)
                 else:
                     raise err
@@ -578,11 +589,12 @@ class Queries:
         except LCDResponseError as err:
             if err.response.status == 404 and retry < 3:
                 retry +=1
+                sleep(5)
                 self.get_status_of_tx(tx_hash, retry)
             else:
                 return f'Transaction hash could not be found even after multiple retries.'
 
-    def market_hours(self):
+    def market_hours(self, retry=0):
 
         # Oracle query mAPPL
         # https://fcd.terra.dev/wasm/contracts/terra1t6xe0txzywdg85n6k8c960cuwgh6l8esw6lau9/store?query_msg={"price":{"base_asset":"terra1vxtwu4ehgzz77mnfwrntyrmgl64qjs75mpwqaz","quote_asset":"uusd"}}
@@ -593,23 +605,32 @@ class Queries:
         # If the query for mAAPL returns a last_updated_base that is older than 2min, it will assume the market is closed        
         # https://www.nasdaq.com/stock-market-trading-hours-for-nasdaq
 
-        query = {
-            "price": {
-                "base_asset": Terra.mAAPL_token,
-                "quote_asset":"uusd"
+        try:
+            query = {
+                "price": {
+                    "base_asset": Terra.mAAPL_token,
+                    "quote_asset":"uusd"
+                }
             }
-        }
-        query_result = Terra.terra.wasm.contract_query(Terra.Oracle, query)
+            query_result = Terra.terra.wasm.contract_query(Terra.Oracle, query)
 
-        unix_last_price_update = query_result['last_updated_base']
-        unix_now = mktime(datetime.now().timetuple())
+            unix_last_price_update = query_result['last_updated_base']
+            unix_now = mktime(datetime.now().timetuple())
 
-        time_difference = unix_now - unix_last_price_update
+            time_difference = unix_now - unix_last_price_update
 
-        if time_difference < 120: # 2 min = 60*2 = 120 seconds
-            return True
-        else:
-            return False
+            if time_difference < 120: # 2 min = 60*2 = 120 seconds
+                return True
+            else:
+                return False
+        except LCDResponseError as err:
+            if retry < 2:
+                retry += 1
+                sleep(5)
+                self.market_hours(retry)
+            else:
+                raise err
+
 
     def get_native_balance(self, denom:str):
         balance_native = Terra.terra.bank.balance(address=account_address).to_data()
