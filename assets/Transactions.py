@@ -265,6 +265,20 @@ class Transaction:
             txhash = self.execute_transaction(contract, execute_msg, coins)
             return txhash
 
+        def claim_PSI(self):
+            # Todo: ETH, Luna?
+            contract=Terra.NexusnETHrewards
+            execute_msg = {
+                "anyone": {
+                    "anyone_msg": {
+                        "claim_rewards": {}
+                    }
+                }
+            }
+            coins=Coins()
+
+            txhash = self.execute_transaction(contract, execute_msg, coins)
+            return txhash
 
         def sell_MIR(self, amount:Dec):
             amount = int(amount)
@@ -310,6 +324,23 @@ class Transaction:
                     "contract": Terra.Terraswap_ANC_UST_Pair,
                     "amount": str(amount),
                     "msg": "eyJzd2FwIjp7fX0="
+                }
+            }
+
+            coins=Coins()
+
+            txhash = self.execute_transaction(contract, execute_msg, coins)
+            return txhash
+
+        def sell_PSI(self, amount:Dec):
+            amount = int(amount)
+
+            contract=Terra.PSI_token
+            execute_msg={
+                "send": {
+                    "contract": Terra.Nexus_PSI_UST_Pair,
+                    "amount": str(amount),
+                    "msg": "eyJzd2FwIjp7Im1heF9zcHJlYWQiOiIwLjAwMiIsImJlbGllZl9wcmljZSI6IjkuNjg3OTg4MDYzMTk0NzM4NzYwIn19"
                 }
             }
 

@@ -84,7 +84,7 @@ class Notifications:
         self,
         format,
         Anchor_borrow_info, Mirror_position_info,
-        claimable_MIR, claimable_SPEC, claimable_ANC, claimable_UST,
+        claimable_MIR, claimable_SPEC, claimable_ANC, claimable_PSI, claimable_UST,
         available_MIR_LP_token_for_withdrawal, available_SPEC_LP_token_for_withdrawal, available_ANC_LP_token_for_withdrawal,
         all_rates):
 
@@ -134,12 +134,14 @@ class Notifications:
                 status_update += f'MIR: {claimable_MIR.__float__()/1000000:.2f} ({claimable_MIR.__float__()/1000000 * all_rates["MIR"].__float__()/1000000:.2f} UST)\n'
                 status_update += f'SPEC: {claimable_SPEC.__float__()/1000000:.2f} ({claimable_SPEC.__float__()/1000000 * all_rates["SPEC"].__float__()/1000000:.2f} UST)\n'
                 status_update += f'ANC: {claimable_ANC.__float__()/1000000:.2f} ({claimable_ANC.__float__()/1000000 * all_rates["ANC"].__float__()/1000000:.2f} UST)\n'
+                status_update += f'PSI: {claimable_PSI.__float__()/1000000:.2f} ({claimable_PSI.__float__()/1000000 * all_rates["PSI"].__float__()/1000000:.2f} UST)\n'
                 status_update += f'UST: {claimable_UST.__float__()/1000000:.2f}\n'
                 status_update += f'\n'
                 status_update += f'Current price in UST, minimum sell prices in UST, distance:\n'
                 status_update += f'MIR: {all_rates["MIR"].__float__()/1000000:.2f}, {config.MIR_min_price:.2f}, {(config.MIR_min_price / all_rates["MIR"].__float__()/1000000 - 1 ) * 100:.2f} %\n'
                 status_update += f'SPEC: {all_rates["SPEC"].__float__()/1000000:.2f}, {config.SPEC_min_price:.2f}, {(config.SPEC_min_price/ all_rates["SPEC"].__float__()/1000000 - 1 ) * 100:.2f} %\n'
                 status_update += f'ANC: {all_rates["ANC"].__float__()/1000000:.2f}, {config.ANC_min_price:.2f}, {(config.ANC_min_price/ all_rates["ANC"].__float__()/1000000 - 1 ) * 100:.2f} %\n'
+                status_update += f'PSI: {all_rates["PSI"].__float__()/1000000:.2f}, {config.PSI_min_price:.2f}, {(config.PSI_min_price/ all_rates["PSI"].__float__()/1000000 - 1 ) * 100:.2f} %\n'
                 status_update += f'\n'
 
                 
@@ -182,12 +184,14 @@ class Notifications:
                 status_update += f'MIR: {claimable_MIR.__float__()/1000000:.2f} ({claimable_MIR.__float__()/1000000 * all_rates["MIR"].__float__()/1000000:.2f} UST)<br>'
                 status_update += f'SPEC: {claimable_SPEC.__float__()/1000000:.2f} ({claimable_SPEC.__float__()/1000000 * all_rates["SPEC"].__float__()/1000000:.2f} UST)<br>'
                 status_update += f'ANC: {claimable_ANC.__float__()/1000000:.2f} ({claimable_ANC.__float__()/1000000 * all_rates["ANC"].__float__()/1000000:.2f} UST)<br>'
+                status_update += f'PSI: {claimable_PSI.__float__()/1000000:.2f} ({claimable_PSI.__float__()/1000000 * all_rates["PSI"].__float__()/1000000:.2f} UST)<br>'
                 status_update += f'UST: {claimable_UST.__float__()/1000000:.2f}<br>'
                 status_update += f'<br>'
                 status_update += f'Current price in UST, minimum sell prices in UST, distance:<br>'
                 status_update += f'MIR: {all_rates["MIR"].__float__()/1000000:.2f}, {config.MIR_min_price:.2f}, {(config.MIR_min_price / (all_rates["MIR"].__float__()/1000000) - 1 ) * 100:.2f} %<br>'
                 status_update += f'SPEC: {all_rates["SPEC"].__float__()/1000000:.2f}, {config.SPEC_min_price:.2f}, {(config.SPEC_min_price / (all_rates["SPEC"].__float__()/1000000) - 1 ) * 100:.2f} %<br>'
                 status_update += f'ANC: {all_rates["ANC"].__float__()/1000000:.2f}, {config.ANC_min_price:.2f}, {(config.ANC_min_price / (all_rates["ANC"].__float__()/1000000) - 1 ) * 100:.2f} %<br>'
+                status_update += f'PSI: {all_rates["PSI"].__float__()/1000000:.2f}, {config.PSI_min_price:.2f}, {(config.PSI_min_price / (all_rates["PSI"].__float__()/1000000) - 1 ) * 100:.2f} %<br>'
                 status_update += f'<br>'
 
             return status_update

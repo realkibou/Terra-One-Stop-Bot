@@ -75,7 +75,10 @@ class Terra:
     Spectrum_SPEC_UST_LP = contact_addresses['Spectrum SPEC-UST LP']
     Terraswap_ANC_UST_Pair = contact_addresses['terraswapAncUstPair']
     Terraswap_ANC_UST_LP = contact_addresses['terraswapAncUstLPToken']
+    Nexus_PSI_UST_Pair = contact_addresses['Nexus Psi-UST Pair']
+
     SpectrumStaking = contact_addresses['SpectrumStaking']
+    NexusnETHrewards = contact_addresses['NexusnETHrewards']
 
     SPEC_token = contact_addresses['SPEC']
     MIR_token = contact_addresses['MIR']
@@ -84,6 +87,7 @@ class Terra:
     bLuna_token = contact_addresses['bLUNA']
     mAAPL_token = contact_addresses['mAAPL']
     aUST_token = contact_addresses['aUST']
+    PSI_token = contact_addresses['PSI']
 
     failed_tx_hash = contact_addresses['failed_tx_hash']
     success_tx_hash = contact_addresses['success_tx_hash']

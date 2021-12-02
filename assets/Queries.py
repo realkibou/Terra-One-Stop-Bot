@@ -38,13 +38,15 @@ class Queries:
         all_rates_uluna, \
         MIR_pool_info, \
         SPEC_pool_info, \
-        ANC_pool_info  \
+        ANC_pool_info, \
+        PSI_pool_info  \
                  = await asyncio.gather(
         Terra.terra_async.wasm.contract_query(Terra.mmMarket, query),
         Terra.terra_async.market.swap_rate(Coin('uluna', 1000000), 'uusd'),
         self.get_pool_info(Terra.Mirror_MIR_UST_Pair),
         self.get_pool_info(Terra.Spectrum_SPEC_UST_Pair),
         self.get_pool_info(Terra.Terraswap_ANC_UST_Pair),
+        self.get_pool_info(Terra.Nexus_PSI_UST_Pair),
         )
 
         all_rates['uluna'] = Dec(all_rates_uluna.amount)
@@ -54,6 +56,7 @@ class Queries:
         all_rates['MIR'] = Dec(MIR_pool_info[1] / MIR_pool_info[0] * 1000000)
         all_rates['SPEC'] = Dec(SPEC_pool_info[1] / SPEC_pool_info[0] * 1000000)
         all_rates['ANC'] = Dec(ANC_pool_info[1] / ANC_pool_info[0] * 1000000)
+        all_rates['PSI'] = Dec(PSI_pool_info[1] / PSI_pool_info[0] * 1000000)
 
         all_rates['MIR-TOKEN-PER-SHARE'] = Dec(MIR_pool_info[0] / MIR_pool_info[2])
         all_rates['MIR-UST-PER-SHARE'] = Dec(MIR_pool_info[1] / MIR_pool_info[2])
@@ -63,6 +66,9 @@ class Queries:
         
         all_rates['ANC-TOKEN-PER-SHARE'] = Dec(ANC_pool_info[0] / ANC_pool_info[2])
         all_rates['ANC-UST-PER-SHARE'] = Dec(ANC_pool_info[1] / ANC_pool_info[2])
+
+        all_rates['PSI-TOKEN-PER-SHARE'] = Dec(PSI_pool_info[0] / PSI_pool_info[2])
+        all_rates['PSI-UST-PER-SHARE'] = Dec(PSI_pool_info[1] / PSI_pool_info[2])
 
         return all_rates
 
@@ -377,6 +383,21 @@ class Queries:
             else:
                 raise err
 
+    async def get_claimable_PSI(self):
+        claimable = 0
+
+        query = {"accrued_rewards":
+            {
+                "address":account_address
+            }
+        }
+
+        query_result = Terra.terra.wasm.contract_query(Terra.NexusnETHrewards, query)
+
+        # Sum up all claimable rewards for this account_address
+        claimable = query_result['rewards']
+
+        return Dec(claimable)
 
     def Mirror_get_claimable_UST(self, Mirror_position_info:list, retry=0):
 
@@ -655,12 +676,15 @@ class Queries:
         wallet_balances['aUST'], \
         wallet_balances['MIR'], \
         wallet_balances['SPEC'], \
-        wallet_balances['ANC'] = await asyncio.gather(
+        wallet_balances['ANC'], \
+        wallet_balances['PSI'] \
+            = await asyncio.gather(
             Terra.terra_async.bank.balance(address=account_address),
             self.get_non_native_balance(Terra.aUST_token),
             self.get_non_native_balance(Terra.MIR_token),
             self.get_non_native_balance(Terra.SPEC_token),
             self.get_non_native_balance(Terra.ANC_token),
+            self.get_non_native_balance(Terra.PSI_token)
         )
 
         for i in balance_native.to_data():

@@ -25,6 +25,7 @@ class Contract_addresses:
                 'Mirror MIR-UST LP': 'terra17gjf2zehfvnyjtdgua9p9ygquk6gukxe7ucgwh',
                 # mAssets https://docs.mirror.finance/networks#terra
                 'ANC' : 'terra14z56l0fp2lsf86zy3hty2z47ezkhnthtr9yq76',
+                'PSI' : 'terra12897djskt9rge8dtmm86w654g7kzckkd698608',
                 'aUST' : 'terra1hzh9vpxhsk8253se0vv5jj6etdvxu3nv8z07zu',
                 'bETH' : 'terra1dzhzukyezv0etz22ud940z7adyv7xgcjkahuun',
                 'bLUNA' : 'terra1kc87mu460fwkqte29rquh4hc20m54fxwtsx7gp',
@@ -98,7 +99,12 @@ class Contract_addresses:
                 'team_vesting': 'terra1pm54pmw3ej0vfwn3gtn6cdmaqxt0x37e9jt0za',
                 'investor_vesting': 'terra10evq9zxk2m86n3n3xnpw28jpqwp628c6dzuq42',
                 'success_tx_hash': '42DE8348A333613EB013251DE2056EE301019DA8C2505935B24E8596AFD350A1',
-                'failed_tx_hash': '004DE6AFAD74853F89B2BFA1DF0B286692FA1D504AD7B9327E03D670C47E93D3'
+                'failed_tx_hash': '004DE6AFAD74853F89B2BFA1DF0B286692FA1D504AD7B9327E03D670C47E93D3',
+                # Nexus
+                # https://docs.nexusprotocol.app/launch/smart-contracts/deployed-contracts
+                'NexusnETHrewards' : 'terra1fhqsu40s0lk3p308mcakzjecj6ts6j2guepfr4',
+                'Nexus Psi-UST Pair' : 'terra163pkeeuwxzr0yhndf8xd2jprm9hrtk59xf7nqf',
+                'Nexus Psi-UST LP' : 'terra1q6r8hfdl203htfvpsmyh8x689lp2g0m7856fwd'
             }
         else:
             # bombay-12

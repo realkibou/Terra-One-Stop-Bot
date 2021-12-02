@@ -65,6 +65,10 @@ async def main():
         Queries_class.get_fee_estimation()
         )
 
+        available_MIR_LP_token_for_withdrawal, \
+        available_ANC_LP_token_for_withdrawal, \
+        available_SPEC_LP_token_for_withdrawal = 0, 0, 0
+
         general_estimated_tx_fee = Dec(general_estimated_tx_fee)
 
         if wallet_balance['uusd'] < general_estimated_tx_fee:
@@ -73,7 +77,7 @@ async def main():
         
         datetime_now = datetime.now()
         status_update = False
-        action_dict = {'MIR' : 'none','SPEC' : 'none','ANC' : 'none', }
+        action_dict = {'MIR' : 'none','SPEC' : 'none','ANC' : 'none', 'PSI' : 'none'}
         claimable_MIR = claimable_SPEC = claimable_ANC = value_of_SPEC_LP_token =available_ANC_LP_token_for_withdrawal = value_of_ANC_LP_token = 0
         wallet_balance_before = deepcopy(wallet_balance)
 
@@ -84,7 +88,7 @@ async def main():
         #                     f'------------------------------------------\n')
 
         # Check if the this section for the token is enabled
-        if config.MIR_claim_and_deposit_in_LP:
+        if config.MIR_withdraw_and_sell_if_min_price_is_reached:
             if cooldowns.get('withdraw_MIR_from_pool') is None or cooldowns['withdraw_MIR_from_pool'] <= datetime_now:
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
@@ -123,10 +127,10 @@ async def main():
             else:
                 default_logger.debug(f'[MIR LP Withdrawal] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["withdraw_MIR_from_pool"]}).')
         else:
-            default_logger.debug(f'[MIR LP Withdrawal] Skipped because disabled by config ({config.MIR_claim_and_deposit_in_LP}).')
+            default_logger.debug(f'[MIR LP Withdrawal] Skipped because disabled by config ({config.MIR_withdraw_and_sell_if_min_price_is_reached}).')
 
         # Check if the this section for the token is enabled
-        if config.SPEC_claim_and_deposit_in_LP:
+        if config.SPEC_withdraw_and_sell_if_min_price_is_reached:
             if cooldowns.get('withdraw_SPEC_from_pool') is None or cooldowns['withdraw_SPEC_from_pool'] <= datetime_now:
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
@@ -165,11 +169,11 @@ async def main():
             else:
                 default_logger.debug(f'[SPEC LP Withdrawal] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["withdraw_SPEC_from_pool"]}).')
         else:
-            default_logger.debug(f'[SPEC LP Withdrawal] Skipped because disabled by config ({config.SPEC_claim_and_deposit_in_LP}).')
+            default_logger.debug(f'[SPEC LP Withdrawal] Skipped because disabled by config ({config.SPEC_withdraw_and_sell_if_min_price_is_reached}).')
 
 
         # Check if the this section for the token is enabled
-        if config.ANC_claim_and_deposit_in_LP:
+        if config.ANC_withdraw_and_sell_if_min_price_is_reached:
             if cooldowns.get('withdraw_ANC_from_pool') is None or cooldowns['withdraw_ANC_from_pool'] <= datetime_now:
                 # Check if there is enough UST balance in the wallet to pay the transaction fees
                 if wallet_balance['uusd'] > general_estimated_tx_fee:
@@ -208,7 +212,7 @@ async def main():
             else:
                 default_logger.debug(f'[ANC LP Withdrawal] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["withdraw_ANC_from_pool"]}).')
         else:
-            default_logger.debug(f'[ANC LP Withdrawal] Skipped because disabled by config ({config.ANC_claim_and_deposit_in_LP}).')
+            default_logger.debug(f'[ANC LP Withdrawal] Skipped because disabled by config ({config.ANC_withdraw_and_sell_if_min_price_is_reached}).')
 
 
         # default_logger.debug(f'------------------------------------------\n'
@@ -499,7 +503,100 @@ async def main():
         else:
             default_logger.debug(f'[ANC Claim] Skipped because disabled by config ({config.ANC_claim_and_sell_token}).')
 
-    
+        # Nexus: Claim PSI
+        # Check if this section is enabled
+        if config.PSI_claim_and_sell_token or config.PSI_claim_and_deposit_in_LP:
+            if cooldowns.get('claim_PSI') is None or cooldowns['claim_PSI'] <= datetime_now:
+                # Check if there is enough UST balance in the wallet to pay the transaction fees
+                if wallet_balance['uusd'] > general_estimated_tx_fee:
+                    claimable_PSI = await Queries_class.get_claimable_PSI()
+                    # Check if there is any token claimable
+                    if claimable_PSI > 0:
+                        value_of_PSI_claim = Queries_class.simulate_Token_Swap(claimable_PSI, Terra_class.Nexus_PSI_UST_Pair, Terra_class.PSI_token)
+                        # Check if the amount claimable is bigger than the min_amount
+                        if (value_of_PSI_claim/1000000) >= config.PSI_min_total_value:
+                            # Check if the min_price for a sale has been matched
+                            if config.PSI_claim_and_sell_token and (all_rates['PSI']/1000000) >= config.PSI_min_price:
+                                # Claim PSI
+                                claim_PSI_tx = Transaction_class.claim_PSI()
+                                claim_PSI_tx_status = Queries_class.get_status_of_tx(claim_PSI_tx)
+                                if claim_PSI_tx_status == True:
+                                    default_logger.debug(f'[PSI Claim] Success TX: {claim_PSI_tx}')
+                                    report_logger.info(f'[PSI Claim] {(claimable_PSI.__float__()/1000000):.2f} PSI have been claimed to be sold.')
+                                    # Mark for sale
+                                    action_dict['PSI'] = 'sell'
+                                    # Update UST balance in wallet
+                                    wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
+                                else:
+                                    report_logger.warning(f'[PSI Claim] Failed TX: {claim_PSI_tx}.\n'
+                                                        f'[PSI Claim] Reason: {claim_PSI_tx_status}')
+                                    cooldowns['claim_PSI'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
+                            # Check if deposit is enabled
+                            elif config.PSI_claim_and_deposit_in_LP:
+                                # Check if enough UST is available to actually deposit it later
+                                UST_to_be_deposited_with_PSI = claimable_PSI * (all_rates['PSI']/1000000 + tax_rate)
+                                if wallet_balance['uusd'] > UST_to_be_deposited_with_PSI:
+                                    # Claim and mark for deposit
+                                    claim_PSI_tx = Transaction_class.claim_PSI()
+                                    claim_PSI_tx_status = Queries_class.get_status_of_tx(claim_PSI_tx)
+                                    if claim_PSI_tx_status == True:
+                                        default_logger.debug(f'[PSI Claim] Success TX: {claim_PSI_tx}')
+                                        # Mark for deposit
+                                        action_dict['PSI'] = 'deposit'
+                                        report_logger.info(f'[PSI Claim] {(claimable_PSI.__float__()/1000000):.2f} PSI have been claimed to be deposited.')
+                                        # Update UST balance in wallet
+                                        wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
+                                    else:
+                                        report_logger.warning(f'[PSI Claim] Failed TX: {claim_PSI_tx}.\n'
+                                                        f'[PSI Claim] Reason: {claim_PSI_tx_status}')
+                                        cooldowns['claim_PSI'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
+                                # Not enough UST in the wallet to deposit later. Check if allowed to take from Anchor Earn.
+                                elif config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP:
+                                    # Check if enough in Anchor Earn to withdraw
+                                    if (wallet_balance['aUST'] * all_rates['aUST']/1000000 + wallet_balance['uusd']) > UST_to_be_deposited_with_PSI:
+                                        # Withdraw from Anchor Earn
+                                        claim_Anchor_withdraw_UST_from_Earn_tx = Transaction_class.Anchor_withdraw_UST_from_Earn(UST_to_be_deposited_with_PSI - wallet_balance['uusd'], 'uusd')
+                                        claim_Anchor_withdraw_UST_from_Earn_tx_status = Queries_class.get_status_of_tx(claim_Anchor_withdraw_UST_from_Earn_tx)
+                                        if claim_Anchor_withdraw_UST_from_Earn_tx_status:
+                                            # ! This can result in a withdraw from Anchor Earn three times (MIR, SPEC, ANC, PSI) if you balance is not enough. There is no cumulated withdraw.
+                                            report_logger.info(f'[PSI Claim] No enought UST balance to depoit later with PSI, so {(UST_to_be_deposited_with_ANC.__float__()/1000000 - wallet_balance["uusd"].__float__()/1000000):.2f} UST have been withdrawn to be deposited later with.')
+                                            # Claim and mark for deposit
+                                            claim_PSI_tx = Transaction_class.claim_PSI()
+                                            claim_PSI_tx_status = Queries_class.get_status_of_tx(claim_PSI_tx)
+                                            if claim_PSI_tx_status == True:
+                                                default_logger.debug(f'[PSI Claim] Success TX: {claim_PSI_tx}')
+                                                # Mark for deposit
+                                                action_dict['PSI'] = 'deposit'
+                                                report_logger.info(f'[PSI Claim] {(claimable_PSI.__float__()/1000000):.2f} PSI have been claimed to be deposited.')
+                                                # Update UST balance in wallet
+                                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
+                                            else:
+                                                report_logger.warning(f'[PSI Claim] Failed TX: {claim_PSI_tx}.\n'
+                                                                f'[PSI Claim] Reason: {claim_PSI_tx_status}')
+                                                cooldowns['claim_PSI'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
+                                        else:
+                                            report_logger.warning(f'[PSI Claim] Failed TX: {claim_Anchor_withdraw_UST_from_Earn_tx}.\n'
+                                                    f'[PSI Claim] Reason: {claim_Anchor_withdraw_UST_from_Earn_tx_status}')
+                                            cooldowns['Anchor_withdraw_UST_from_Earn'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
+                                    else:
+                                        report_logger.warning(f'[PSI Claim] Skipped because not enough UST/aUST ({(wallet_balance["uusd"].__float__() / 1000000):.2f})/({(wallet_balance["aUST"].__float__() / 1000000):.2f} in wallet to be deposited with ANC later.')
+                                else:
+                                    report_logger.warning(f'[PSI Claim] Skipped because not enough UST ({(wallet_balance["uusd"].__float__() / 1000000):.2f}) in wallet to be deposited with ANC later and not enabled to withdraw from Anchor Earn ({config.Anchor_enable_withdraw_from_Anchor_Earn_to_deposit_in_LP}).')
+                            else:
+                                default_logger.debug(f'[PSI Claim] Minimum price ({config.PSI_min_price}) not exceeded for sale ({(all_rates["ANC"].__float__()/1000000):.2f}) and a deposit is not enabled ({config.ANC_claim_and_deposit_in_LP}).')
+                        else:
+                            default_logger.debug(f'[PSI Claim] Skipped because claimable PSI value ({(value_of_PSI_claim.__float__()/1000000):.2f}) below limit ({config.PSI_min_total_value}).')
+                    else:
+                        default_logger.debug(f'[PSI Claim] Skipped because no claimable PSI ({(claimable_PSI.__float__()/1000000):.0f}).')
+                else:
+                    report_logger.warning(f'[PSI Claim] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
+                    return False
+            else:
+                default_logger.debug(f'[PSI Claim] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["claim_PSI"]}).')
+
+        else:
+            default_logger.debug(f'[PSI Claim] Skipped because disabled by config ({config.PSI_claim_and_sell_token}).')
+
             
         # Mirror: Claim un-locked UST
         # Check if this section is enabled
@@ -543,11 +640,13 @@ async def main():
 
         wallet_balance['MIR'], \
         wallet_balance['SPEC'], \
-        wallet_balance['ANC'] \
+        wallet_balance['ANC'], \
+        wallet_balance['PSI'] \
         = await asyncio.gather(
         Queries_class.get_non_native_balance(Terra_class.MIR_token),
         Queries_class.get_non_native_balance(Terra_class.SPEC_token),
-        Queries_class.get_non_native_balance(Terra_class.ANC_token)
+        Queries_class.get_non_native_balance(Terra_class.ANC_token),
+        Queries_class.get_non_native_balance(Terra_class.PSI_token)
         )
 
 
@@ -655,6 +754,41 @@ async def main():
         else:
             default_logger.debug(f'[ANC Sell] Skipped because disabled by config ({config.ANC_claim_and_sell_token}).')
         
+
+        # Check if section is enabled
+        if config.PSI_claim_and_sell_token:
+            if cooldowns.get('sell_PSI') is None or cooldowns['sell_PSI'] <= datetime_now:
+                if action_dict['PSI'] == 'sell':
+                    # Check if there is enough UST balance in the wallet to pay the transaction fees
+                    if wallet_balance['uusd'] > general_estimated_tx_fee:
+                        # Check if there is any token to sell
+                        default_logger.debug(f'[PSI Sell] Updated PSI balance {(wallet_balance["PSI"].__float__()/1000000)}')
+                        PSI_to_be_sold = wallet_balance['PSI'] - wallet_balance_before['PSI']
+                        if PSI_to_be_sold > 0:
+                            # Price and min_value has been checked before therefore sell
+                            sell_PSI_tx = Transaction_class.sell_PSI(PSI_to_be_sold)
+                            sell_PSI_tx_status = Queries_class.get_status_of_tx(sell_PSI_tx)
+                            if sell_PSI_tx_status == True:
+                                default_logger.debug(f'[PSI Sell] Success TX: {sell_PSI_tx}')
+                                report_logger.info(f'[PSI Sell] {(PSI_to_be_sold.__float__()/1000000):.2f} PSI have been sold for {(PSI_to_be_sold.__float__() / 1000000 * all_rates["PSI"].__float__()/1000000):.2f} UST total.')
+                                # Update UST balance in wallet
+                                wallet_balance['uusd'] = Dec(Queries_class.get_native_balance('uusd'))
+                            else:
+                                report_logger.warning(f'[PSI Sell] Failed TX: {sell_PSI_tx}.\n'
+                                                f'[PSI Sell] Reason: {sell_PSI_tx_status}')
+                                cooldowns['sell_PSI'] = datetime_now + timedelta(hours=config.Block_failed_transaction_cooldown)
+                        else:
+                            default_logger.debug(f'[PSI Sell] Skipped because no PSI ({(PSI_to_be_sold.__float__()/1000000):.0f}) to sell.')
+                    else:
+                        report_logger.warning(f'[PSI Sell] Skipped because insufficent funds ({(wallet_balance["uusd"].__float__() / 1000000):.2f}).')
+                        return False
+                else:
+                    default_logger.debug(f'[PSI Sell] Skipped because no PSI marked to be sold ({action_dict["PSI"]}).')
+            else:
+                default_logger.debug(f'[PSI Sell] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["sell_PSI"]}).')
+        else:
+            default_logger.debug(f'[PSI Sell] Skipped because disabled by config ({config.PSI_claim_and_sell_token}).')
+
 
         # default_logger.debug(f'------------------------------------------\n'
         #                     f'------------ DEPOSIT SECTION -------------\n'
@@ -1046,7 +1180,7 @@ async def main():
                     status_update = Notifications_class.generate_status_report_html(
                         'text',
                         Anchor_borrow_info, Mirror_position_info,
-                        claimable_MIR, claimable_SPEC, claimable_ANC, claimable_UST,
+                        claimable_MIR, claimable_SPEC, claimable_ANC, claimable_PSI, claimable_UST,
                         available_MIR_LP_token_for_withdrawal, available_SPEC_LP_token_for_withdrawal, available_ANC_LP_token_for_withdrawal,
                         all_rates)
                     # Notify user about status report
@@ -1061,7 +1195,7 @@ async def main():
                             Notifications_class.generate_status_report_html(
                                 config.Email_format,
                                 Anchor_borrow_info, Mirror_position_info,
-                                claimable_MIR, claimable_SPEC, claimable_ANC, claimable_UST,
+                                claimable_MIR, claimable_SPEC, claimable_ANC, claimable_PSI, claimable_UST,
                                 available_MIR_LP_token_for_withdrawal, available_SPEC_LP_token_for_withdrawal, available_ANC_LP_token_for_withdrawal,
                                 all_rates))
 
