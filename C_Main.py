@@ -1036,8 +1036,15 @@ async def main():
         # Anchor: Deposit UST from previous claim/sale of reward tokens into Anchor to get more aUST
         if config.Anchor_Earn_enable_deposit_UST:
             if cooldowns.get('Anchor_deposit_UST_for_Earn') is None or cooldowns['Anchor_deposit_UST_for_Earn'] <= datetime_now:
-                UST_to_be_deposited_at_Anchor_Earn = wallet_balance['uusd'] - wallet_balance_before['uusd'] - (config.Anchor_Earn_min_balance_to_keep_in_wallet * 1000000)
                 default_logger.debug(f'[Anchor Deposit] Updated UST balance {(wallet_balance["uusd"].__float__()/1000000):.2f}')
+
+                UST_wallet_difference = wallet_balance['uusd'] - wallet_balance_before['uusd']
+
+                if wallet_balance['uusd'] > (config.Anchor_Earn_min_balance_to_keep_in_wallet * 1000000):
+                    UST_to_be_deposited_at_Anchor_Earn = UST_wallet_difference
+                else:
+                    UST_to_be_deposited_at_Anchor_Earn = UST_wallet_difference - ((config.Anchor_Earn_min_balance_to_keep_in_wallet * 1000000) - wallet_balance['uusd'])
+                
                 if UST_to_be_deposited_at_Anchor_Earn >= config.Anchor_Earn_min_deposit_amount:
                     Anchor_deposit_UST_for_Earn_tx = Transaction_class.Anchor_deposit_UST_for_Earn(UST_to_be_deposited_at_Anchor_Earn)
                     Anchor_deposit_UST_for_Earn_tx_status = Queries_class.get_status_of_tx(Anchor_deposit_UST_for_Earn_tx)

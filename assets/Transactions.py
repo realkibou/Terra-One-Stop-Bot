@@ -34,11 +34,13 @@ class Transaction:
             def claim_ANC(self): return Terra.failed_tx_hash
             def claim_MIR(self): return Terra.failed_tx_hash
             def claim_SPEC(self, claimable_SPEC_list): return Terra.failed_tx_hash
+            def claim_PSI(self): return Terra.failed_tx_hash
             def Mirror_claim_unlocked_UST(self, Mirror_position_info): return Terra.failed_tx_hash
             def Mirror_withdraw_collateral_for_position(self, idx, collateral_amount_in_kind, denom): return Terra.failed_tx_hash
             def sell_ANC(self, amount): return Terra.failed_tx_hash
             def sell_MIR(self, amount): return Terra.failed_tx_hash
             def sell_SPEC(self, amount): return Terra.failed_tx_hash
+            def sell_PSI(self, amount): return Terra.failed_tx_hash
             def deposit_ANC_in_pool(self, amount_token, amount_UST): return Terra.failed_tx_hash
             def deposit_MIR_in_pool(self, amount_token, amount_UST): return Terra.failed_tx_hash
             def deposit_SPEC_in_pool(self, amount_token, amount_UST): return Terra.failed_tx_hash
@@ -55,11 +57,13 @@ class Transaction:
             def claim_ANC(self): return Terra.success_tx_hash
             def claim_MIR(self): return Terra.success_tx_hash
             def claim_SPEC(self, claimable_SPEC_list): return Terra.success_tx_hash
+            def claim_PSI(self): return Terra.success_tx_hash
             def Mirror_claim_unlocked_UST(self, Mirror_position_info): return Terra.success_tx_hash
             def Mirror_withdraw_collateral_for_position(self, idx, collateral_amount_in_kind, denom): return Terra.success_tx_hash
             def sell_ANC(self, amount): return Terra.success_tx_hash
             def sell_MIR(self, amount): return Terra.success_tx_hash
             def sell_SPEC(self, amount): return Terra.success_tx_hash
+            def sell_PSI(self, amount): return Terra.success_tx_hash
             def deposit_ANC_in_pool(self, amount_token, amount_UST): return Terra.success_tx_hash
             def deposit_MIR_in_pool(self, amount_token, amount_UST): return Terra.success_tx_hash
             def deposit_SPEC_in_pool(self, amount_token, amount_UST): return Terra.success_tx_hash
