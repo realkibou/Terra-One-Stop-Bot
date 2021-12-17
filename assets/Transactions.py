@@ -344,7 +344,7 @@ class Transaction:
                 "send": {
                     "contract": Terra.Nexus_PSI_UST_Pair,
                     "amount": str(amount),
-                    "msg": "eyJzd2FwIjp7Im1heF9zcHJlYWQiOiIwLjAwMiIsImJlbGllZl9wcmljZSI6IjkuNjg3OTg4MDYzMTk0NzM4NzYwIn19"
+                    "msg": "eyJzd2FwIjp7Im1heF9zcHJlYWQiOiIwLjAwMiIsImJlbGllZl9wcmljZSI6IjE5LjE3NDgyOTkwNzQ5NTY1NzM0OCJ9fQ=="
                 }
             }
 
