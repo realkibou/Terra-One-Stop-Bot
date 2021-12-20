@@ -1146,7 +1146,7 @@ async def main():
 
                             if Mirror_deposit_collateral_for_position_tx_status == True:
                                 default_logger.debug(f'[Mirror Shorts Deposit] Success TX: {Mirror_deposit_collateral_for_position_tx}')
-                                report_logger.info(f'[Mirror Shorts] {(amount_to_execute_in_kind.__float__()/1000000):.2f} {collateral_token_denom} with a value of {amount_to_execute_in_ust.__float__():.2f} UST of collateral have been deposited to your short position idx {position["position_idx"]}.')
+                                report_logger.info(f'[Mirror Shorts] {(amount_to_execute_in_kind.__float__()/1000000):.2f} {collateral_token_denom} with a value of {(amount_to_execute_in_ust.__float__()/1000000):.2f} UST of collateral have been deposited to your short position idx {position["position_idx"]}.')
                             else:
                                 report_logger.warning(f'[Mirror Shorts Deposit] Failed TX: {Mirror_deposit_collateral_for_position_tx}.\n'
                                                     f'[Mirror Shorts Deposit] Reason: {Mirror_deposit_collateral_for_position_tx_status}')
