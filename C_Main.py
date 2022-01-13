@@ -67,7 +67,8 @@ async def main():
 
         available_MIR_LP_token_for_withdrawal, \
         available_ANC_LP_token_for_withdrawal, \
-        available_SPEC_LP_token_for_withdrawal = 0, 0, 0
+        available_SPEC_LP_token_for_withdrawal, \
+        claimable_UST = 0, 0, 0, 0
 
         general_estimated_tx_fee = Dec(general_estimated_tx_fee)
 
