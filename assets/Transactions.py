@@ -340,11 +340,19 @@ class Transaction:
             amount = int(amount)
 
             contract=Terra.PSI_token
+            msg = {
+                "swap":{
+                    "belief_price": Queries_class.all_rates['PSI'],
+                    "max_spread":"0.01"
+                    }
+                    }
+
             execute_msg={
                 "send": {
                     "contract": Terra.Nexus_PSI_UST_Pair,
                     "amount": str(amount),
-                    "msg": "eyJzd2FwIjp7Im1heF9zcHJlYWQiOiIwLjAwMiIsImJlbGllZl9wcmljZSI6IjE5LjE3NDgyOTkwNzQ5NTY1NzM0OCJ9fQ=="
+                    # "msg": "eyJzd2FwIjp7Im1heF9zcHJlYWQiOiIwLjAwMiIsImJlbGllZl9wcmljZSI6IjE5LjE3NDgyOTkwNzQ5NTY1NzM0OCJ9fQ=="
+                    'msg': base64.b64encode(bytes(json.dumps(msg), "ascii")).decode(),
                 }
             }
 
