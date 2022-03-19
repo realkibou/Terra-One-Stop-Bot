@@ -325,35 +325,38 @@ class Queries:
                 "height": latest_block
             },
         }
+        try:
+            query_result_mirrorFarm, \
+            query_result_anchorFarm, \
+            query_result_specFarm, \
+            query_result_pylonFarm, \
+            = await asyncio.gather(
+            Terra.terra_async.wasm.contract_query(Terra.mirrorFarm, Mirror_SPEC_query),
+            Terra.terra_async.wasm.contract_query(Terra.anchorFarm, Anchor_SPEC_query),
+            Terra.terra_async.wasm.contract_query(Terra.specFarm, Spectrum_SPEC_query),
+            Terra.terra_async.wasm.contract_query(Terra.pylonFarm, Pylon_SPEC_query),
+            )
 
-        query_result_mirrorFarm, \
-        query_result_anchorFarm, \
-        query_result_specFarm, \
-        query_result_pylonFarm, \
-        = await asyncio.gather(
-        Terra.terra_async.wasm.contract_query(Terra.mirrorFarm, Mirror_SPEC_query),
-        Terra.terra_async.wasm.contract_query(Terra.anchorFarm, Anchor_SPEC_query),
-        Terra.terra_async.wasm.contract_query(Terra.specFarm, Spectrum_SPEC_query),
-        Terra.terra_async.wasm.contract_query(Terra.pylonFarm, Pylon_SPEC_query),
-        )
+            claimable_mirrorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_mirrorFarm['reward_infos']))
+            claimable_anchorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_anchorFarm['reward_infos']))
+            claimable_specFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_specFarm['reward_infos']))
+            claimable_pylonFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_pylonFarm['reward_infos']))
 
-        claimable_mirrorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_mirrorFarm['reward_infos']))
-        claimable_anchorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_anchorFarm['reward_infos']))
-        claimable_specFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_specFarm['reward_infos']))
-        claimable_pylonFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_pylonFarm['reward_infos']))
+            claimable_SPEC_list = [
+                +claimable_mirrorFarm \
+                +claimable_anchorFarm \
+                +claimable_specFarm \
+                +claimable_pylonFarm,
+                claimable_mirrorFarm >0,
+                claimable_anchorFarm >0,
+                claimable_specFarm >0,
+                claimable_pylonFarm >0,
+            ]
+            return claimable_SPEC_list
 
-        claimable_SPEC_list = [
-            +claimable_mirrorFarm \
-            +claimable_anchorFarm \
-            +claimable_specFarm \
-            +claimable_pylonFarm,
-            claimable_mirrorFarm >0,
-            claimable_anchorFarm >0,
-            claimable_specFarm >0,
-            claimable_pylonFarm >0,
-        ]
-
-        return claimable_SPEC_list
+        except LCDResponseError as err:
+            if err.response.status == 520:
+                claimable_SPEC_list = [0, False, False, False, False]
 
 
     async def get_claimable_ANC(self, retry=0):
@@ -451,9 +454,15 @@ class Queries:
                 }
             }
         }
-        query_result = Terra.terra.wasm.contract_query(token_UST_pair_address, query)
-        UST_return = query_result['return_amount']
 
+        try:
+            query_result = Terra.terra.wasm.contract_query(token_UST_pair_address, query)
+            UST_return = query_result['return_amount']
+
+        except LCDResponseError as err:
+            if err.response.status == 520:
+                UST_return = 0
+                
         return Dec(UST_return)
 
     def get_available_LP_token_for_withdrawal(self, token_farm_address:str, token_address:str):

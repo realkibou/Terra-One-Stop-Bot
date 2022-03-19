@@ -341,11 +341,11 @@ class Transaction:
 
             contract=Terra.PSI_token
             msg = {
-                "swap":{
+                "swap": {
                     "belief_price": Queries_class.all_rates['PSI'],
                     "max_spread":"0.01"
                     }
-                    }
+                }
 
             execute_msg={
                 "send": {
