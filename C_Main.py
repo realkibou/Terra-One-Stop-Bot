@@ -18,16 +18,15 @@
 
 # Terra SDK
 from terra_sdk.core.numeric import Dec
-
 # Other assets
 from assets.Notifications import Notifications
-from assets.Queries import Queries
-from assets.Terra import Terra
-from assets.Transactions import Transaction
 from assets.Other import Cooldown, Prettify
 from assets.Logging import Logger
+from assets.Terra import Terra
+from assets.Queries import Queries
+from assets.Transactions import Transaction
 import B_Config as config
- 
+
 # Other imports
 from datetime import datetime, timedelta, date
 from time import time
@@ -40,6 +39,7 @@ Transaction_class, Queries_class, Cooldown_class, Logger_class, Terra_class, Pre
 default_logger, report_logger, report_array = Logger_class.default_logger, Logger_class.report_logger, Logger_class.report_array
 
 async def main():
+    # Other assets
 
     if config.Debug_mode: print(f'main() started.')
 
@@ -47,8 +47,8 @@ async def main():
     err = None
 
     try:
+        tax_rate = Terra.terra.treasury.tax_rate()
 
-        tax_rate, \
         cooldowns, \
         Mirror_position_info, \
         Anchor_borrow_info, \
@@ -56,7 +56,6 @@ async def main():
         wallet_balance, \
         general_estimated_tx_fee \
             = await asyncio.gather(
-        Terra.terra_async.treasury.tax_rate(),
         Cooldown_class.read_cooldown(),
         Queries_class.Mirror_get_position_info(),
         Queries_class.Anchor_get_borrow_info(),
@@ -64,6 +63,7 @@ async def main():
         Queries_class.get_wallet_balances(),
         Queries_class.get_fee_estimation()
         )
+
 
         available_MIR_LP_token_for_withdrawal, \
         available_ANC_LP_token_for_withdrawal, \
@@ -74,7 +74,7 @@ async def main():
 
         if wallet_balance['uusd'] < general_estimated_tx_fee:
             report_logger.warning(f'[Script] YOU NEED TO ACT! Your wallet balance of {(wallet_balance["uusd"].__float__() / 1000000):.2f} UST is too low to execute any transaction.')
-            return False
+            raise Exception
         
         datetime_now = datetime.now()
         status_update = False
@@ -1115,7 +1115,7 @@ async def main():
                             default_logger.debug(
                             f'[Mirror Shorts] For position {position_idx} amount to be withdrawn ({(amount_to_execute_in_ust.__float__()/1000000):.0f}) is below limit ({config.Mirror_min_withdraw_limit_in_UST}).')
                     else:
-                        report_logger.warning(f'[Mirror Shorts] Withdraw was planned, but NYSE market is not open ({within_market_hours}).')
+                        report_logger.warning(f'[Mirror Shorts] Withdraw for {position_idx} {position["mAsset_symbol"]} was planned, but NYSE market is not open ({within_market_hours}).')
                 else:
                     default_logger.debug(f'[Mirror Shorts Withdraw] Transaction skipped, since it recently failed. Cooldown until ({cooldowns["Mirror_withdraw_collateral_for_position"]}).')
 

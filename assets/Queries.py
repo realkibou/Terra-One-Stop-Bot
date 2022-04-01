@@ -34,15 +34,14 @@ class Queries:
             "epoch_state": {},
         }
 
-        query_result, \
-        all_rates_uluna, \
+        query_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query)
+        all_rates_uluna = Terra.terra.market.swap_rate(Coin('uluna', 1000000), 'uusd')
+
         MIR_pool_info, \
         SPEC_pool_info, \
         ANC_pool_info, \
         PSI_pool_info  \
                  = await asyncio.gather(
-        Terra.terra_async.wasm.contract_query(Terra.mmMarket, query),
-        Terra.terra_async.market.swap_rate(Coin('uluna', 1000000), 'uusd'),
         self.get_pool_info(Terra.Mirror_MIR_UST_Pair),
         self.get_pool_info(Terra.Spectrum_SPEC_UST_Pair),
         self.get_pool_info(Terra.Terraswap_ANC_UST_Pair),
@@ -74,7 +73,7 @@ class Queries:
 
     async def get_fee_estimation(self):
 
-        estimation = await Terra.terra_async.treasury.tax_cap('uusd')
+        estimation = Terra.terra.treasury.tax_cap('uusd')
         fee = estimation.to_data().get('amount')
         return Dec(fee)
 
@@ -83,7 +82,7 @@ class Queries:
         query = {
             "pool": {}
         }
-        query_result = await Terra.terra_async.wasm.contract_query(token_UST_pair_address, query)
+        query_result = Terra.terra.wasm.contract_query(token_UST_pair_address, query)
 
         UST_in_pool = sum(Dec(asset['amount']) for asset in query_result['assets'] if asset['info'].get('token') is None)
         token_in_pool = sum(Dec(asset['amount']) for asset in query_result['assets'] if asset['info'].get('token') is not None)
@@ -98,13 +97,13 @@ class Queries:
                 "asset": "uluna"
             }
         }
-        query_result = await Terra.terra_async.wasm.contract_query(Terra.Collateral_Oracle, query)
+        query_result = Terra.terra.wasm.contract_query(Terra.Collateral_Oracle, query)
         get_luna_col_multiplier = query_result['multiplier']
         return Dec(get_luna_col_multiplier)
 
 
     async def get_latest_block(self):
-        result = await Terra.terra_async.tendermint.block_info()
+        result = Terra.terra.tendermint.block_info()
         height = result['block']['header']['height']
         return int(height)
 
@@ -122,12 +121,9 @@ class Queries:
             },
         }
 
-        position_ids_result, \
-        min_col_ratio_result \
-        = await asyncio.gather(
-            Terra.terra_async.wasm.contract_query(Terra.Collateral_Oracle, query_oracle_price_collateral),
-            Terra.terra_async.wasm.contract_query(Terra.Mint, query_oracle_price_mint)
-        )
+        position_ids_result = Terra.terra.wasm.contract_query(Terra.Collateral_Oracle, query_oracle_price_collateral)
+        min_col_ratio_result = Terra.terra.wasm.contract_query(Terra.Mint, query_oracle_price_mint)
+
         oracle_price_and_min_col_ratio = [Dec(position_ids_result['rate']), Dec(min_col_ratio_result['min_collateral_ratio'])]
 
         return oracle_price_and_min_col_ratio
@@ -144,12 +140,8 @@ class Queries:
             },
         }
 
-        position_ids_result, \
-        luna_col_multiplier, \
-        = await asyncio.gather(
-        Terra.terra_async.wasm.contract_query(Terra.Mint, query_position_ids),
-        self.get_luna_col_multiplier(),
-        )        
+        position_ids_result = Terra.terra.wasm.contract_query(Terra.Mint, query_position_ids)
+        luna_col_multiplier = await self.get_luna_col_multiplier()
 
         for position in position_ids_result['positions']:
 
@@ -326,16 +318,10 @@ class Queries:
             },
         }
 
-        query_result_mirrorFarm, \
-        query_result_anchorFarm, \
-        query_result_specFarm, \
-        query_result_pylonFarm, \
-        = await asyncio.gather(
-        Terra.terra_async.wasm.contract_query(Terra.mirrorFarm, Mirror_SPEC_query),
-        Terra.terra_async.wasm.contract_query(Terra.anchorFarm, Anchor_SPEC_query),
-        Terra.terra_async.wasm.contract_query(Terra.specFarm, Spectrum_SPEC_query),
-        Terra.terra_async.wasm.contract_query(Terra.pylonFarm, Pylon_SPEC_query),
-        )
+        query_result_mirrorFarm = Terra.terra.wasm.contract_query(Terra.mirrorFarm, Mirror_SPEC_query)
+        query_result_anchorFarm = Terra.terra.wasm.contract_query(Terra.anchorFarm, Anchor_SPEC_query)
+        query_result_specFarm = Terra.terra.wasm.contract_query(Terra.specFarm, Spectrum_SPEC_query)
+        query_result_pylonFarm = Terra.terra.wasm.contract_query(Terra.pylonFarm, Pylon_SPEC_query)
 
         claimable_mirrorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_mirrorFarm['reward_infos']))
         claimable_anchorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_anchorFarm['reward_infos']))
@@ -369,7 +355,7 @@ class Queries:
                 }
             }
 
-            query_result = await Terra.terra_async.wasm.contract_query(Terra.mmMarket, query)
+            query_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query)
 
             claimable = query_result['pending_rewards']
 
@@ -477,7 +463,7 @@ class Queries:
         query = {
             "whitelist": {},
         }
-        query_result = await Terra.terra_async.wasm.contract_query(Terra.mmOverseer, query)
+        query_result = Terra.terra.wasm.contract_query(Terra.mmOverseer, query)
 
         return dict((elem['symbol'], Dec(elem['max_ltv'])) for elem in query_result['elems'])
 
@@ -501,19 +487,12 @@ class Queries:
             },
         }
 
-        Anchor_get_max_ltv_ratio, \
-        borrow_limit_result, \
-        query_msg_collateral_result, \
-        query_msg_borrower_info_result, \
-        = await asyncio.gather(
-        self.Anchor_get_max_ltv_ratio(),
-        Terra.terra_async.wasm.contract_query(Terra.mmOverseer, query_msg_borrow_limit),
-        Terra.terra_async.wasm.contract_query(Terra.mmOverseer, query_msg_collateral),
-        Terra.terra_async.wasm.contract_query(Terra.mmMarket, query_msg_borrower_info),
-        )
+        Anchor_get_max_ltv_ratio = await self.Anchor_get_max_ltv_ratio()
+        borrow_limit_result = Terra.terra.wasm.contract_query(Terra.mmOverseer, query_msg_borrow_limit)
+        query_msg_collateral_result = Terra.terra.wasm.contract_query(Terra.mmOverseer, query_msg_collateral)
+        query_msg_borrower_info_result = Terra.terra.wasm.contract_query(Terra.mmMarket, query_msg_borrower_info)
 
-        max_ltv_ratio = Dec(Anchor_get_max_ltv_ratio['BETH'])
-
+        max_ltv_ratio = Anchor_get_max_ltv_ratio['BETH']
         borrow_limit = Dec(borrow_limit_result['borrow_limit'])
 
         # Check if you actually have some collateral in Anchor
@@ -654,8 +633,9 @@ class Queries:
 
 
     def get_native_balance(self, denom:str):
-        balance_native = Terra.terra.bank.balance(address=account_address).to_data()
-        return sum(Dec(item['amount']) for item in balance_native if item['denom'] == denom)
+        balance_native = Terra.terra.bank.balance(address=account_address)
+        
+        return sum(Dec(item['amount']) for item in balance_native[0].to_data() if item['denom'] == denom)
 
     async def get_non_native_balance(self, token_address): 
         query = {
@@ -663,7 +643,7 @@ class Queries:
                 "address": account_address
             }
         }
-        query_result = await Terra.terra_async.wasm.contract_query(token_address, query)
+        query_result = Terra.terra.wasm.contract_query(token_address, query)
 
         return Dec(query_result['balance'])
     
@@ -672,14 +652,14 @@ class Queries:
 
         wallet_balances = {}
 
-        balance_native, \
+        balance_native = Terra.terra.bank.balance(address=account_address)
+
         wallet_balances['aUST'], \
         wallet_balances['MIR'], \
         wallet_balances['SPEC'], \
         wallet_balances['ANC'], \
         wallet_balances['PSI'] \
             = await asyncio.gather(
-            Terra.terra_async.bank.balance(address=account_address),
             self.get_non_native_balance(Terra.aUST_token),
             self.get_non_native_balance(Terra.MIR_token),
             self.get_non_native_balance(Terra.SPEC_token),
@@ -687,7 +667,7 @@ class Queries:
             self.get_non_native_balance(Terra.PSI_token)
         )
 
-        for i in balance_native.to_data():
+        for i in balance_native[0].to_data():
             wallet_balances[i['denom']] = Dec(i['amount'])
 
         return wallet_balances
