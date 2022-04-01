@@ -1,2 +1,3 @@
-terra-sdk@git+https://github.com/terra-money/terra-sdk-python.git@e0e4f03f32485cd75a308a3a04ddc01f8f670547
+terra-sdk
 httpx
+asyncio
