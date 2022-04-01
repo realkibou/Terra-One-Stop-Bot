@@ -319,16 +319,10 @@ class Queries:
         }
         
         try:
-            query_result_mirrorFarm, \
-            query_result_anchorFarm, \
-            query_result_specFarm, \
-            query_result_pylonFarm, \
-            = await asyncio.gather(
-            Terra.terra_async.wasm.contract_query(Terra.mirrorFarm, Mirror_SPEC_query),
-            Terra.terra_async.wasm.contract_query(Terra.anchorFarm, Anchor_SPEC_query),
-            Terra.terra_async.wasm.contract_query(Terra.specFarm, Spectrum_SPEC_query),
-            Terra.terra_async.wasm.contract_query(Terra.pylonFarm, Pylon_SPEC_query),
-            )
+            query_result_mirrorFarm = Terra.terra.wasm.contract_query(Terra.mirrorFarm, Mirror_SPEC_query)
+            query_result_anchorFarm = Terra.terra.wasm.contract_query(Terra.anchorFarm, Anchor_SPEC_query)
+            query_result_specFarm = Terra.terra.wasm.contract_query(Terra.specFarm, Spectrum_SPEC_query)
+            query_result_pylonFarm = Terra.terra.wasm.contract_query(Terra.pylonFarm, Pylon_SPEC_query)
 
             claimable_mirrorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_mirrorFarm['reward_infos']))
             claimable_anchorFarm = Dec(sum(Dec(reward['pending_spec_reward']) for reward in query_result_anchorFarm['reward_infos']))
