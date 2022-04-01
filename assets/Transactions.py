@@ -5,6 +5,7 @@ import asyncio
 from terra_sdk.core.coins import Coins
 from terra_sdk.core.coins import Coin
 from terra_sdk.core.wasm import MsgExecuteContract
+from terra_sdk.client.lcd.api.tx import CreateTxOptions
 from terra_sdk.core.numeric import Dec
 from terra_sdk.exceptions import LCDResponseError
 
@@ -341,11 +342,11 @@ class Transaction:
 
             contract=Terra.PSI_token
             msg = {
-                "swap":{
-                    "belief_price": Queries_class.all_rates['PSI'],
-                    "max_spread":"0.01"
+                "swap": {
+                    "belief_price": str(int(Queries_class.all_rates['PSI'])),
+                    "max_spread": "0.01"
                     }
-                    }
+                }
 
             execute_msg={
                 "send": {
@@ -734,9 +735,10 @@ class Transaction:
                 )
 
                 transaction = Terra.wallet.create_and_sign_tx(
-                    msgs=[message],
-                    memo='Terra One-Stop-Bot by realKibou',
-                    )
+                    CreateTxOptions(
+                        msgs=[message],
+                        memo='Terra One-Stop-Bot by realKibou',
+                    ))
 
                 result = Terra.terra.tx.broadcast(transaction)
                 # print(result)
