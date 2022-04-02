@@ -248,13 +248,13 @@ class Transaction:
                     }
                 ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(
+            transaction = Terra.wallet.create_and_sign_tx(
                 CreateTxOptions(
-                        msgs=[message],
-                        memo='Terra One-Stop-Bot by realKibou',
-                    )
-            )
-            result = Terra.terra.tx.broadcast(sendtx)
+                    msgs=message,
+                    memo='Terra One-Stop-Bot by realKibou',
+                ))
+            
+            result = Terra.terra.tx.broadcast(transaction)
             return result.txhash
 
 
