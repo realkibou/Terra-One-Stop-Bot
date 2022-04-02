@@ -197,12 +197,6 @@ class Transaction:
 
         def claim_SPEC(self, claimable_SPEC_list:list):
                 
-            # claimable_SPEC_list contains from index 1 True/False if there is any Spec to claim:
-            # claimable_mirrorFarm
-            # claimable_anchorFarm
-            # claimable_SPEC_listFarm
-            # claimable_pylonFarm
-
             message = []
 
             message.append(
@@ -254,7 +248,12 @@ class Transaction:
                     }
                 ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(message, memo='Terra One-Stop-Bot by realKibou')
+            sendtx = Terra.wallet.create_and_sign_tx(
+                CreateTxOptions(
+                        msgs=[message],
+                        memo='Terra One-Stop-Bot by realKibou',
+                    )
+            )
             result = Terra.terra.tx.broadcast(sendtx)
             return result.txhash
 
