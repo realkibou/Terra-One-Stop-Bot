@@ -590,7 +590,7 @@ class Queries:
 
         try:
             status = Terra.terra.tx.tx_info(tx_hash)
-            if status.code is None:
+            if status.code == 0:
                 # Transaction successful
                 return True
             else:
