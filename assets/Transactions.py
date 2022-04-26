@@ -251,7 +251,7 @@ class Transaction:
             transaction = Terra.wallet.create_and_sign_tx(
                 CreateTxOptions(
                     msgs=message,
-                    memo='Terra One-Stop-Bot by realKibou',
+                    memo=config.Memo_for_transcations,
                 ))
             
             result = Terra.terra.tx.broadcast(transaction)
@@ -498,7 +498,7 @@ class Transaction:
                 coins=coins
             ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(message, memo='Terra One-Stop-Bot by realKibou')
+            sendtx = Terra.wallet.create_and_sign_tx(message, memo=config.Memo_for_transcations)
             result = Terra.terra.tx.broadcast(sendtx)
 
             return result.txhash
@@ -555,7 +555,7 @@ class Transaction:
                 coins=coins
             ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(message, memo='Terra One-Stop-Bot by realKibou')
+            sendtx = Terra.wallet.create_and_sign_tx(message, memo=config.Memo_for_transcations)
             result = Terra.terra.tx.broadcast(sendtx)
 
             return result.txhash
@@ -611,7 +611,7 @@ class Transaction:
                 coins=coins
             ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(message, memo='Terra One-Stop-Bot by realKibou')
+            sendtx = Terra.wallet.create_and_sign_tx(message, memo=config.Memo_for_transcations)
             result = Terra.terra.tx.broadcast(sendtx)
 
             return result.txhash
@@ -648,7 +648,7 @@ class Transaction:
                     coins=Coins()
             ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(message, memo='Terra One-Stop-Bot by realKibou')
+            sendtx = Terra.wallet.create_and_sign_tx(message, memo=config.Memo_for_transcations)
             result = Terra.terra.tx.broadcast(sendtx)
 
             return result.txhash
@@ -683,7 +683,7 @@ class Transaction:
                     },
             ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(message, memo='Terra One-Stop-Bot by realKibou')
+            sendtx = Terra.wallet.create_and_sign_tx(message, memo=config.Memo_for_transcations)
             result = Terra.terra.tx.broadcast(sendtx)
 
             return result.txhash
@@ -719,7 +719,7 @@ class Transaction:
                     },
             ))
 
-            sendtx = Terra.wallet.create_and_sign_tx(message, memo='Terra One-Stop-Bot by realKibou')
+            sendtx = Terra.wallet.create_and_sign_tx(message, memo=config.Memo_for_transcations)
             result = Terra.terra.tx.broadcast(sendtx)
 
             return result.txhash
@@ -736,7 +736,7 @@ class Transaction:
                 transaction = Terra.wallet.create_and_sign_tx(
                     CreateTxOptions(
                         msgs=[message],
-                        memo='Terra One-Stop-Bot by realKibou',
+                        memo=config.Memo_for_transcations,
                     ))
 
                 result = Terra.terra.tx.broadcast(transaction)
